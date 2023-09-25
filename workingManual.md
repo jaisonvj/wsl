@@ -106,6 +106,11 @@ docker exec -it <containerId> /bin/bash
 docker pull ubuntu:latest
 ```
 
+10.remove all images except k8s
+```sh
+docker images | grep -v 'k8s' | awk '{print $3}' | xargs docker rmi
+```
+
 # common commands used in kubernetes
 
 1. get the kubeconfig file content 
