@@ -92,4 +92,9 @@ wsl --list --verbose
 ```
 wsl --setdefault Ubuntu
 ```
+# now install everthing setp by step
 
+1. install zsh shell, sudo for no password and open ssh --> `wsl-setup-automate.sh`
+2. install docker using --> `docker-install`
+3. install minikube using --> `mini-kube-install`
+4. install kubectl using --> `kubectl-install` 
