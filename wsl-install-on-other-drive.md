@@ -28,7 +28,7 @@ Add-AppxPackage .\\Ubuntu_2204.1.7.0_x64.appx
 
 # Now open the ubuntu from the shortcut added in the menu
 
-**note:** `the wsl should be installed from microsoft store and Have the Virtual Machine Platform optional component enabled` [ClickHereForInstructions](https://devblogs.microsoft.com/commandline/a-preview-of-wsl-in-the-microsoft-store-is-now-available/#how-to-install-and-use-wsl-in-the-microsoft-store) 
+**note:** `the wsl should be installed from microsoft store and Have the Virtual Machine Platform optional component enabled` [Click Here For Instructions](https://devblogs.microsoft.com/commandline/a-preview-of-wsl-in-the-microsoft-store-is-now-available/#how-to-install-and-use-wsl-in-the-microsoft-store) 
 
 6.enableing the systemd by opening wsl.conf file with nano:
 ```sh
