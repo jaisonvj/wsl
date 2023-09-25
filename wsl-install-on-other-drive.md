@@ -26,3 +26,31 @@ Set-Location .\\Linux
 Add-AppxPackage .\\Ubuntu_2204.1.7.0_x64.appx
 ```
 
+# Now open the ubuntu from the shortcut added in the menu
+
+**note:** the wsl should be installed from microsoft store before this step
+6.enableing the systemd by opening wsl.conf file with nano:
+```sh
+sudo nano /etc/wsl.conf
+```
+7.paste this and save by ctrl+s and ctrl+x
+```sh
+[boot]
+systemd=true
+```
+
+# Now change the system hostname
+
+8. navigate to host file and replacing the ip by name or other name by the name we required
+```sh
+sudo vim /etc/hosts
+```
+9.apply this and restart the terminal
+```sh
+sudo hostnamectl set-hostname ubuntuWSL 
+```
+# we may face issue in connecting to lens
+
+
+
+
