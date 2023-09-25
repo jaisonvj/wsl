@@ -97,4 +97,9 @@ wsl --setdefault Ubuntu
 1. install zsh shell, sudo for no password and open ssh --> `wsl-setup-automate.sh`
 2. install docker using --> `docker-install`
 3. install minikube using --> `mini-kube-install`
-4. install kubectl using --> `kubectl-install` 
+4. install kubectl using --> `kubectl-install`
+
+## During ssh if we get anything like hostidentification changed
+```
+ssh-keygen -R 172.20.28.153
+```
