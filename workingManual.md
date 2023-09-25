@@ -111,6 +111,11 @@ docker pull ubuntu:latest
 docker images | grep -v 'k8s' | awk '{print $3}' | xargs docker rmi
 ```
 
+11.reclaim all spaces used by docker
+```sh
+docker system prune --volumes
+```
+
 # common commands used in kubernetes
 
 1. get the kubeconfig file content 
