@@ -28,7 +28,8 @@ Add-AppxPackage .\\Ubuntu_2204.1.7.0_x64.appx
 
 # Now open the ubuntu from the shortcut added in the menu
 
-**note:** the wsl should be installed from microsoft store before this step
+**note:** `the wsl should be installed from microsoft store and Have the Virtual Machine Platform optional component enabled` [ClickHereForInstructions](https://devblogs.microsoft.com/commandline/a-preview-of-wsl-in-the-microsoft-store-is-now-available/#how-to-install-and-use-wsl-in-the-microsoft-store) 
+
 6.enableing the systemd by opening wsl.conf file with nano:
 ```sh
 sudo nano /etc/wsl.conf
@@ -43,7 +44,7 @@ systemd=true
 
 8. navigate to host file and replacing the ip by name or other name by the name we required
 ```sh
-sudo vim /etc/hosts
+sudo nano /etc/hosts
 ```
 9.apply this and restart the terminal
 ```sh
@@ -51,6 +52,44 @@ sudo hostnamectl set-hostname ubuntuWSL
 ```
 # we may face issue in connecting to lens
 
+### Windows Preparation
 
+1. Ensure hypervisor functionality is enabled in BIOS.
+   * Otherwise you will hit https://github.com/microsoft/WSL/issues/5363
+   *lets shut down the wsl
+```
+wsl --shutdown
+```
 
+2. Launch a PowerShell prompt in Administrator mode [Win+X > Windows PowerShell (Admin)]
+
+```
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+bcdedit /set hypervisorlaunchtype auto
+```
+3. Install the Linux kernel update package and install it
+   * x86/x64 - https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi
+   * arm64 - https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_arm64.msi
+
+5. Restart machine
+
+4. Launch a PowerShell prompt in Administrator mode [Win+X > Windows PowerShell (Admin)]
+
+```
+wsl --set-default-version 2
+```
+
+5. Install Ubuntu Linux distribution of your choice from the Windows Store (not the one with the version in the names)
+
+6. Verify WSL version is set correctly
+
+```
+wsl --list --verbose
+```
+7.set the default wsl
+
+```
+wsl --setdefault Ubuntu
+```
 
