@@ -160,4 +160,13 @@ tls_key_base64=$(cat tls.key | base64 | tr -d "\n")
 sed -i "s/tls.crt:.*/tls.crt: $tls_crt_base64/" /home/jaison/zenoptics_deployment.yaml
 sed -i "s/tls.key:.*/tls.key: $tls_key_base64/" /home/jaison/zenoptics_deployment.yaml
 ```
-
+## 7. also add this ip as insecure
+```
+sudo nano /etc/docker/daemon.json
+```
+**pste this**
+```json
+{
+  "insecure-registries" : ["192.168.49.2:30085"]
+}
+```
