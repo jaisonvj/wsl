@@ -150,4 +150,14 @@ cat tls.crt | base64 | tr -d "\n"
 ``` 
 cat tls.key | base64 | tr -d "\n"
 ```
+## 6. for direct replacment in deployment secret
+```
+# Encode the contents of tls.crt and tls.key to base64
+tls_crt_base64=$(cat tls.crt | base64 | tr -d "\n")
+tls_key_base64=$(cat tls.key | base64 | tr -d "\n")
+
+# Replace the values in zenoptics_deployment.yaml
+sed -i "s/tls.crt:.*/tls.crt: $tls_crt_base64/" /home/jaison/zenoptics_deployment.yaml
+sed -i "s/tls.key:.*/tls.key: $tls_key_base64/" /home/jaison/zenoptics_deployment.yaml
+```
 
