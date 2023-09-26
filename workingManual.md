@@ -108,7 +108,7 @@ docker pull ubuntu:latest
 
 10.pushing the build image to the local docker repository
 ```sh
-docker tag tomcat:v1.0 192.168.49.2:30085/tomcat:v1.0 && docker push 192.168.49.2:30085/tomcat:v1.0
+docker tag zen_tomcat:v1.1 192.168.49.2:30085/zen_tomcat:v1.1 && docker push 192.168.49.2:30085/zen_tomcat:v1.1
 ```
 syntax:
 ```sh
