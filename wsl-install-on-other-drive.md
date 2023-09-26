@@ -164,7 +164,7 @@ sed -i "s/tls.key:.*/tls.key: $tls_key_base64/" /home/jaison/zenoptics_deploymen
 ```
 sudo nano /etc/docker/daemon.json
 ```
-**pste this**
+**paste this**
 ```json
 {
   "insecure-registries" : ["192.168.49.2:30085"]
