@@ -142,9 +142,12 @@ kubectl get nodes -o wide
 sudo mkdir -p /etc/docker/certs.d/192.168.49.2:30085/
 sudo cp /home/jaison/tls.crt /etc/docker/certs.d/192.168.49.2:30085/ca.cr
 ```
-## 4. Now create base64 encoded of tls.crt & tls.key to paste in secret of private dockerregistry yaml
+## 4. Now create base64 encoded of tls.crt to paste in secret of private dockerregistry yaml
 ```
 cat tls.crt | base64 | tr -d "\n" 
+```
+## 5. Now create base64 encoded of tls.key to paste in secret of private dockerregistry yaml
+``` 
 cat tls.key | base64 | tr -d "\n"
 ```
 
