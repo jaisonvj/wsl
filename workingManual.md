@@ -106,6 +106,15 @@ docker exec -it <containerId> /bin/bash
 docker pull ubuntu:latest
 ```
 
+10.pushing the build image to the local docker repository
+```sh
+docker tag tomcat:v1.0 192.168.49.2:30085/tomcat:v1.0 && docker push 192.168.49.2:30085/tomcat:v1.0
+```
+syntax:
+```sh
+docker tag <image_name>:<tag> <minikubeip or nodeip>:<Nodeport>/<image_name>:<tag> && docker push <minikubeip or nodeip>:<Nodeport>/<image_name>:<tag>
+```
+
 10.remove all images except k8s
 ```sh
 docker images | grep -v 'k8s' | awk '{print $3}' | xargs docker rmi
