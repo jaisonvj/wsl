@@ -127,7 +127,7 @@ docker stop $(docker ps -q)
 
 12. remove all the images
 ```sh
-docker rmi $(docker images -q)
+docker rmi $(docker images -q) -f
 ```
 
 13.remove container, images, volumes and all resources not in use
