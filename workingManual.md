@@ -106,7 +106,7 @@ docker exec -it <containerId> /bin/bash
 docker pull ubuntu:latest
 ```
 
-10.pushing the build image to the local docker repository
+10. pushing the build image to the local docker repository
 ```sh
 docker tag zen_tomcat:v1.1 192.168.49.2:30085/zen_tomcat:v1.1 && docker push 192.168.49.2:30085/zen_tomcat:v1.1
 ```
@@ -115,12 +115,27 @@ syntax:
 docker tag <image_name>:<tag> <minikubeip or nodeip>:<Nodeport>/<image_name>:<tag> && docker push <minikubeip or nodeip>:<Nodeport>/<image_name>:<tag>
 ```
 
-10.remove all images except k8s
+11. remove all images except k8s
 ```sh
 docker images | grep -v 'k8s' | awk '{print $3}' | xargs docker rmi
 ```
 
-11.reclaim all spaces used by docker
+11. stop all the containere running
+```sh
+docker stop $(docker ps -q)
+```
+
+12. remove all the images
+```sh
+docker rmi $(docker images -q)
+```
+
+13.remove container, images, volumes and all resources not in use
+```sh
+docker system prune --all
+```
+
+13. reclaim all spaces used by docker
 ```sh
 docker system prune --volumes
 ```
