@@ -140,6 +140,18 @@ docker system prune --all
 docker system prune --volumes
 ```
 
+14. to save the docker image created locally
+```sh
+docker save -o /mnt/e/MresultFinal/images/zen_tomcat.tar zen_tomcat:v1.1
+```
+```sh
+docker save -o <path to save the image>.tar new-local-image:tagname
+```
+15. to run load the image to docker images
+```sh
+docker load -i <path to the image>.tar
+```
+
 # common commands used in kubernetes
 
 1. get the kubeconfig file content 
