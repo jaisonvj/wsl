@@ -170,7 +170,7 @@ sudo nano /etc/docker/daemon.json
   "insecure-registries" : ["192.168.49.2:30085"]
 }
 ```
-## 8.remove the wsl from machine
+## 8. Remove the wsl from machine
 ```
 wsl -l
 ```
