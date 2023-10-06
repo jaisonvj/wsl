@@ -180,7 +180,38 @@ sudo nano /etc/docker/daemon.json
   "insecure-registries" : ["192.168.49.2:30085"]
 }
 ```
-## 8. Remove the wsl from machine
+# Reclaim the disk space from wsl [click here](https://github.com/microsoft/WSL/issues/4699)
+
+1. find the vdisk file path by opening power shell as admin
+```
+cd $env:LOCALAPPDATA\Packages
+```
+2. now list the file to find name of wsl file eg: CanonicalGroupLimited.Ubuntu22.04LTS_79rhkp1fndgsc
+```
+dir
+```
+3. now copy the path as
+```
+C:\Users\jaiso\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu22.04LTS_79rhkp1fndgsc\LocalState\ext4.vhdx
+```
+4. shutdown wsl
+```
+wsl --shutdown
+```
+5. copy path from step 3 replace in vdisk file
+```
+diskpart
+```
+```
+select vdisk file="C:\Users\jaiso\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu22.04LTS_79rhkp1fndgsc\LocalState\ext4.vhdx"
+```
+```
+attach vdisk readonly
+compact vdisk
+detach vdisk
+exit
+```
+# Remove the wsl from machine
 ```
 wsl -l
 ```
