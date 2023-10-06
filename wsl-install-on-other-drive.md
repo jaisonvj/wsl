@@ -46,12 +46,22 @@ systemd=true
 ```sh
 sudo nano /etc/hosts
 ```
-9.apply this and restart the terminal
+9. apply this and restart the terminal
 ```sh
 sudo hostnamectl set-hostname ubuntuWSL 
 ```
-# we may face issue in connecting to lens
-
+### for wsl this two step are extra 
+10. Open/create a new file called wsl.conf under /etc/:
+```sh
+sudo nano /etc/wsl.conf
+```
+11. Add the following configuration to the file:
+```sh
+[network]
+hostname = ubuntuWSL
+generateHosts = false
+```
+   
 ### Windows Preparation
 
 1. Ensure hypervisor functionality is enabled in BIOS.
@@ -87,7 +97,7 @@ wsl --set-default-version 2
 ```
 wsl --list --verbose
 ```
-7.set the default wsl
+7. set the default wsl
 
 ```
 wsl --setdefault Ubuntu
