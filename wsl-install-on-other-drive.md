@@ -182,7 +182,7 @@ sudo nano /etc/docker/daemon.json
 ```
 # Reclaim the disk space from wsl [click here](https://github.com/microsoft/WSL/issues/4699)
 
-1. find the vdisk file path by opening power shell as admin
+1. find the vdisk file path by **opening power shell as admin**
 ```
 cd $env:LOCALAPPDATA\Packages
 ```
