@@ -88,7 +88,7 @@ docker stop <container id>
 
 6. build image in docker
 ```sh
-docker build --no-cache -t <imageNameToBuild> -f <dockerfileName> .
+docker build --progress=plain --no-cache -t <imageNameToBuild> -f <dockerfileName> .
 ```
 
 7. To run container on local machine
