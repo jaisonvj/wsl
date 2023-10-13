@@ -218,3 +218,15 @@ wsl -l
 ```
 wsl --unregister <version name>
 ```
+# Making powershell autocomplete
+
+1. update the power shell
+```
+Install-Module -Name PowerShellGet -Force -AllowClobber
+
+```
+2. install the auto complete
+```
+Install-Module PSReadLine -AllowPrerelease -Force
+
+```
