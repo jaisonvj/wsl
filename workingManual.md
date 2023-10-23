@@ -158,6 +158,9 @@ docker load -i <path to the image>.tar
 ```sh
 kubectl config view
 ```
+```sh
+sudo cat ~/.kube/config
+```
 
 2. to go inside terminal of container of pod
 ```sh
