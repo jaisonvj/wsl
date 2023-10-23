@@ -161,6 +161,9 @@ kubectl config view
 ```sh
 sudo cat ~/.kube/config
 ```
+```sh
+\\wsl.localhost\Ubuntu-22.04
+```
 
 2. to go inside terminal of container of pod
 ```sh
