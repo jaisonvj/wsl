@@ -23,6 +23,8 @@ endif::[]
 //
 :designcenter: the Design Center web application
 
+Reference: https://gist.github.com/timmmmmb/83a9b6b3268006b8cd619a579b1aaf12
+
 = How to use docker on windows home
 
 This document describes how to setup docker for windows home.
