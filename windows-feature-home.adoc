@@ -1,0 +1,68 @@
+// Document Settings
+:imagesdir: images
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+// Table of Contents Settings
+:toclevels: 2
+:sectanchors:
+:sectnums:
+:sectnumlevels: 2
+:toc:
+:toc-placement!:
+:toc-title:
+
+//
+// Start of Document Content
+//
+:designcenter: the Design Center web application
+
+= How to use docker on windows home
+
+This document describes how to setup docker for windows home.
+
+Version: 1.0
+
+Version Date: 23.02.2020
+
+// Page break before TOC
+<<<
+*Table Of Contents*
+
+toc::[]
+
+// Page break before Contents
+<<<
+== Install hyperV
+so you can run docker you need to install hyperV. For the installation run the following code as a .bat file. After the file was executed you need to restart your computer
+----
+pushd "%~dp0"
+dir /b %SystemRoot%\servicing\Packages\*Hyper-V*.mum >hyper-v.txt
+for /f %%i in ('findstr /i . hyper-v.txt 2^>nul') do dism /online /norestart /add-package:"%SystemRoot%\servicing\Packages\%%i"
+del hyper-v.txt
+Dism /online /enable-feature /featurename:Microsoft-Hyper-V -All /LimitAccess /ALL
+pause
+----
+<<<
+== Install Containers Feature
+so you can run docker you also need to install the container feature. For the installation run the following code as a .bat file. After the file was executed you need to restart your computer
+----
+pushd "%~dp0"
+dir /b %SystemRoot%\servicing\Packages\*containers*.mum >containers.txt
+for /f %%i in ('findstr /i . containers.txt 2^>nul') do dism /online /norestart /add-package:"%SystemRoot%\servicing\Packages\%%i"
+del containers.txt
+Dism /online /enable-feature /featurename:Containers -All /LimitAccess /ALL
+pause
+----
+<<<
+== Change Registry
+As a last step before installing docker you need to change your registry. The installation of docker checks your EditionID in the registry.
+To edit it search for regedit and open the first one. After that move to the folder \HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion
+There you need to change the EditionID: Core --> Professional
+After that just install docker normally and at the end don't forget to reset your registry changes.
