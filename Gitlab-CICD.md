@@ -51,5 +51,417 @@ push_image:
 * create a file with .<filename>.yml in main folder for pipeline
 * paste the pipeline script and commit it.
 * when we do commit the gitlab executes the pipeline once for validation and checks for errors
-* we can see ci/cd background process in repository --> CI/CD -->pipelines
-* to edit pipeline logic we can go directly repository --> CI/CD --> editor
+* we can see ci/cd background process in CI/CD -->pipelines
+* to edit pipeline logic we can go directly CI/CD --> editor
+## 8. Stage in gitlab ci/cd
+* to run in order not parallel we use stages
+* if one job fails , next stage not work, but next job works in parallel
+* here we can group multiple jobs under single stage
+* .gitlab-ci.yml
+```yml
+stages:
+  - test
+  - build
+  - deploy
+  
+run_unit_tests:
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+run_lint_tests:
+  stage: test
+  before_script:
+    - echoss "preparing test data ..."
+  script:
+    - echo "Running lint tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+build_image:
+  stage: build
+  script:
+    - echo "Building the docker image..."
+    - echo "tagging the docker image"
+
+push_image:
+  stage: deploy
+  script:
+    - echo "logging into docker registry..."
+    - echo "pushing docker image to registry..."
+
+deploy_image:
+  stage: deploy
+  script:
+    - echo "deploying docker image to dev server..."
+```
+## 9. Relationship in the jobs i.e job dependency("needs")
+* We needed to execute jobs in a certain order within a stage
+* if it fails, it should skip the other dependent jobs
+* .gitlab-ci.yml
+```yml
+stages:
+  - test
+  - build
+  - deploy
+  
+run_unit_tests:
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+run_lint_tests:
+  stage: test
+  before_script:
+    - echoss "preparing test data ..."
+  script:
+    - echo "Running lint tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+build_image:
+  stage: build
+  script:
+    - echo "Building the docker image..."
+    - echo "tagging the docker image"
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  script:
+    - echo "logging into docker registry..."
+    - echo "pushing docker image to registry..."
+
+deploy_image:
+  stage: deploy
+  script:
+    - echo "deploying docker image to dev server..."
+```
+## 10. Script command to execute
+* inline command means os command like pwd, ls, mkdir test-data
+* jobs are executed on linux machine
+* for more complex script we can add bash script created in main directory eg:prepare-test.sh
+* everytime pipeline run in a fresh new environment, so we not needed to worry about cleanup
+* .gitlab-ci.yml
+```yml
+stages:
+  - test
+  - build
+  - deploy
+  
+run_unit_tests:
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+    - pwd
+    - ls
+    - mkdir test-data
+    - ls
+    - chmod +x prepare-test.sh
+    - ./prepare-test.sh
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+    - rm -r test-data
+    - ls
+```
+## 11. "only" specify when job should run
+* create a new branch(repository --> branches) from main branch i.e feature/test-cicd-pipeline
+* if we go to pipielines immediatley the pipeline is triggered for new branch by default
+* we don't want to release new app version from feature or bugfuxes branches
+* we only needed to test, but not build and deploy
+* only -- define when a job runs
+* except -- define when a job does not run
+```yml
+stages:
+  - test
+  - build
+  - deploy
+  
+run_unit_tests:
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+run_lint_tests:
+  stage: test
+  before_script:
+    - echoss "preparing test data ..."
+  script:
+    - echo "Running lint tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+build_image:
+  only:
+    - main
+  stage: build
+  script:
+    - echo "Building the docker image..."
+    - echo "tagging the docker image"
+
+push_image:
+  only:
+    - main
+  stage: deploy
+  script:
+    - echo "logging into docker registry..."
+    - echo "pushing docker image to registry..."
+
+deploy_image:
+  only:
+    - main
+  stage: deploy
+  script:
+    - echo "deploying docker image to dev server..."
+```
+## 12. "Workflow" Rules
+* we dont want to run pipeline other then main branch, so we declare globally
+* a global keyword, which configure the whole pipelines behavior
+* environment variables -- every pipeline gitlab provides predefined variable.
+* list of predefined variables in gitlab docs available
+* $CI_COMMIT_BRANCH --> env for branch name
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main"
+      when: never
+    - when: always
+stages:
+  - test
+  - build
+  - deploy
+  
+run_unit_tests:
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+run_lint_tests:
+  stage: test
+  before_script:
+    - echoss "preparing test data ..."
+  script:
+    - echo "Running lint tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+build_image:
+  stage: build
+  script:
+    - echo "Building the docker image..."
+    - echo "tagging the docker image"
+
+push_image:
+  stage: deploy
+  script:
+    - echo "logging into docker registry..."
+    - echo "pushing docker image to registry..."
+
+deploy_image:
+  stage: deploy
+  script:
+    - echo "deploying docker image to dev server..."
+```
+## 13. Trigger pipeline on merge request
+* when feature branch is completed, the developer raises the merge request for main branch
+* when it is approved whole test should run 
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+stages:
+  - test
+  - build
+  - deploy
+  
+run_unit_tests:
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+run_lint_tests:
+  stage: test
+  before_script:
+    - echoss "preparing test data ..."
+  script:
+    - echo "Running lint tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+build_image:
+  only:
+    - main
+  stage: build
+  script:
+    - echo "Building the docker image..."
+    - echo "tagging the docker image"
+
+push_image:
+  only:
+    - main
+  stage: deploy
+  script:
+    - echo "logging into docker registry..."
+    - echo "pushing docker image to registry..."
+
+deploy_image:
+  only:
+    - main
+  stage: deploy
+  script:
+    - echo "deploying docker image to dev server..."
+```
+## 14. Predefined Environment variables
+* [Click here](https://docs.gitlab.com/ee/ci/variables/predefined_variables.html)
+## 15. Define Project CI/CD Variables
+* if we want to run pipeline for every microservices , value is passed in on pipeline execution, instead of hardcoding in .gitlab-ci.yml file.
+* making the config file more re-usable and flexible.
+**pre defined variable**
+* variable for ci/cd is defined in settings --> CI/CD --> add variable -->
+    key: MICRO_SERVICE_NAME
+    valaue: shopping-cart
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+stages:
+  - test
+  - build
+  - deploy
+  
+run_unit_tests:
+  stage: test
+  before_script:
+    - echo "preparing test data for micro service $MICRO_SERVICE_NAME..."
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+```
+**File type variable**
+* let us consider we have properties or config file have sensetive information
+* variable for ci/cd is defined in settings --> CI/CD --> add variable -->
+    key: PROPERTIES_FILE
+    valaue: content of file
+    type: file
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+stages:
+  - test
+  - build
+  - deploy
+  
+run_unit_tests:
+  stage: test
+  before_script:
+    - echo "preparing test data for micro service $MICRO_SERVICE_NAME..." # prints file path 
+    - echo "using configuration file - $PROPERTIES_FILE .."
+    - cat $PROPERTIES_FILE 
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+```
+**Defining variable in .gitlab-ci.yml file**
+* if we define a variable in a job and only that job can use it
+* if we define variable at top level of the file globally available and all jobs can use it
+* variables saved in the file directly should store only non-sensitive data
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+    image_repository: docker.io/my-docker-id/myapp
+    image_tag: v1.0
+
+run_unit_tests:
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+run_lint_tests:
+  stage: test
+  before_script:
+    - echoss "preparing test data ..."
+  script:
+    - echo "Running lint tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+build_image:
+  variables:
+    image_repository: docker.io/my-docker-id/myapp
+    image_tag: v1.0
+  only:
+    - main
+  stage: build
+  script:
+    - echo "Building the docker image '.."
+    - echo "tagging the docker image $image_repository:image_tag."
+
+push_image:
+  only:
+    - main
+  stage: deploy
+  script:
+    - echo "logging into docker registry..."
+    - echo "pushing docker image to registry..."
+
+deploy_image:
+  only:
+    - main
+  stage: deploy
+  script:
+    - echo "deploying docker image to dev server..."
+```
+## 16. GitLab architecture
+* GitLab server is the main componet for pipeline configuration, pipline execution, store the pipeline results
+* GitLab runners are the agents that run our CI/CD jobs
+* runners can be self managed or runners provided my gitlab
+* GitLab Runners are program that you should install on a machine, that's separate from the one that hosts the gitlab instance.
+* The provided runners by GitLab are shared runners
+* shared runners are available to all projects in a GitLab instance
+* shared runners on gitlab.com are available to all users on the platform
+## 17. Executors
