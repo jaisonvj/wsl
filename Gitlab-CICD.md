@@ -560,6 +560,8 @@ run_unit_tests:
 * above url is found in ec2-->connect-->ssh client-->copy url
 * install
   [Click here](https://docs.gitlab.com/runner/install/linux-repository.html)
-  ![image6]()
+  ![image6](https://github.com/jaisonvj/wsl/commit/eacf515c46e67419e682c980f90ea0bdcf46109b)
+## 26. Execute jobs on specific Runners
+* 
 
 
