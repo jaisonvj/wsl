@@ -550,7 +550,7 @@ run_unit_tests:
 3. copy download to C:\GitLab-Runner and rename gitlab-runner-windows-amd64 file to gitlab-runner
 4. go to settings --> ci/cd --> runners(expand) --> new project --> enter the details --> copy the token
 5. install in windows machine using powershell or cmd
-[image5](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-08%20122537.png)
+![image5](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-08%20122537.png)
 ## 24. Creating amazone account,i am role, vpc, availability zone etc...
 ## 25. Install and configure a local gitlab runner in aws ec2 instance with ubuntu
 * make sure that tcp port 22 open for any ip address(0.0.0.0/0) for ssh
@@ -560,7 +560,7 @@ run_unit_tests:
 * above url is found in ec2-->connect-->ssh client-->copy url
 * install
   [Click here](https://docs.gitlab.com/runner/install/linux-repository.html)
-  ![image6](https://github.com/jaisonvj/wsl/commit/eacf515c46e67419e682c980f90ea0bdcf46109b)
+  ![image6](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-08%20133509.png)
 ## 26. Execute jobs on specific Runners
 * 
 
