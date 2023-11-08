@@ -465,3 +465,26 @@ deploy_image:
 * shared runners are available to all projects in a GitLab instance
 * shared runners on gitlab.com are available to all users on the platform
 ## 17. Executors
+* Executor determines the environment each job runs in
+  
+* **Shell Executor** where commands are executed on os, which is simplest executor
+* on the shell of server GitLab Runner is installed
+* all required programs for executing the jobs, needed to to be installed manually
+* if we want to run the docker command, docker needs to be installed first
+* we neede to install, configure and update tools in server which is lot of manual work
+* no clean build env
+* **Docker executor** which execute jobs inside of docker container instead of shell
+* for every job new container is created
+* because of isolation no version conflict, we have clean state
+* here docker needed to be installed
+* **virtual machine** it take longer time, but we have isolated env
+* **k8s executors** if we have properly configured cluster, the job is executed in pods
+* **Docker Machine Executor** it is special version of docker executor
+* supports auto-scaling
+* lets you create hosts on your computer, on cloud provided on demand, dynamically
+* creates servers, installs docker on them and configures the client to talk to them
+* docker machine executor works like normal docker executor
+* **GitLabs shared runners** are using docker machine executors
+* **Note**: Docker machine executor has been depricated by docker !
+* 2 more executor are ssh executor and parallel executor not imp
+* **which executor to choose ?**
