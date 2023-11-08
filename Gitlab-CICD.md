@@ -488,3 +488,9 @@ deploy_image:
 * **Note**: Docker machine executor has been depricated by docker !
 * 2 more executor are ssh executor and parallel executor not imp
 * **which executor to choose ?**
+* Docker executor is best for linux os
+* specific use cases we can use shell executor
+![image1](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-08%20100512.png)
+![image2](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-08%20103203.png)
+* each executor needed to be register with seperate runner to use it in single ec2 instance
+## 18. Architecture recap and execution flow
