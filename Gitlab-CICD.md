@@ -494,3 +494,72 @@ deploy_image:
 ![image2](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-08%20103203.png)
 * each executor needed to be register with seperate runner to use it in single ec2 instance
 ## 18. Architecture recap and execution flow
+![image3](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-08%20104100.png)
+## 19. Docker executor
+setting --> ci/cd --> runners
+* shared runners -- available to all groups and projects in gitlab instance
+* Group runners -- available to all projects in a group
+* specific runners -- associated with a specific project
+* by default the executor is docker+machine with image ruby
+* we can change image by adding the image tag globally or for specific job
+* lets us consider our runner doesnot have docker installed in this case docker image tag is ignored and jobs executed shell executor
+```yml
+image: alpine:3.18.4
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+stages:
+  - test
+  - build
+  - deploy
+  
+run_unit_tests:
+  image: node:17-alpine
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+    - npm version
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+```
+## 20. Specific runner
+* for security, jobs with specific requirements, projects with lot of ci activity
+* Specific runners are project specific
+* Specific runners must be enabled for each project specifically
+* Specific runner are self managed
+* 1) set up machine 2) install gitLab runner program 3) connect to GitLab instance
+* gitlab runner can installed in local machine, cloud, vm and any os
+* Registering = Binding the runner to specific GitLab instance and setting connection b/w 2
+## 21. Runner configuration demo
+* Configuring a local runner (runner on your machine)
+* configure in windows
+* configure in macos
+* configure in aws ec2 instance with ubuntu installed in it
+## 22. Install and configure a local gitlab runner for macos
+[Click here](https://docs.gitlab.com/runner/configuration/macos_setup.html)
+[brew install](https://brew.sh/)
+## 23. Install and configure a local gitlab runner for windows
+[Click here](https://docs.gitlab.com/runner/install/windows.html)
+1. create a folder C:\GitLab-Runner
+2. download binary
+3. copy download to C:\GitLab-Runner and rename gitlab-runner-windows-amd64 file to gitlab-runner
+4. go to settings --> ci/cd --> runners(expand) --> new project --> enter the details --> copy the token
+5. install in windows machine using powershell or cmd
+[image5](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-08%20122537.png)
+## 24. Creating amazone account,i am role, vpc, availability zone etc...
+## 25. Install and configure a local gitlab runner in aws ec2 instance with ubuntu
+* make sure that tcp port 22 open for any ip address(0.0.0.0/0) for ssh
+* create a new key pair of rsa and download it.
+* launch the instance
+* connect to ec2 by ssh client url i.e ssh -i "~/Downloads/runner-key.pem" ubuntu@<ipaddress>
+* above url is found in ec2-->connect-->ssh client-->copy url
+* install
+  [Click here](https://docs.gitlab.com/runner/install/linux-repository.html)
+  ![image6]()
+
+
