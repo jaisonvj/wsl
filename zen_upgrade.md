@@ -159,28 +159,28 @@ Unblock-File *.ps1
 * menu --> Administration setting --> Report types --> search (powerbi) 
   * edit **PowerBI Service Report**
     * tick PBICloudV2
-    	--Report Launch URL: https://app.powerbi.com/reportembed?reportId=
-    	--Thumbnail Generation URL: https://app.powerbi.com/reportembed?reportId=
+    	* Report Launch URL: https://app.powerbi.com/reportembed?reportId=
+    	* Thumbnail Generation URL: https://app.powerbi.com/reportembed?reportId=
     * update
   * edit **PowerBI Service App Report**
     * tick PBICloudV2
-    	--Report Launch URL: https://app.powerbi.com/reportembed?reportId=
-    	--Thumbnail Generation URL: https://app.powerbi.com/reportembed?reportId=
+    	* Report Launch URL: https://app.powerbi.com/reportembed?reportId=
+    	* Thumbnail Generation URL: https://app.powerbi.com/reportembed?reportId=
     * update
   * edit **PowerBI Service Dashboard**
     * tick PBICloudV2
-    	--Report Launch URL: https://app.powerbi.com/dashboardEmbed?dashboardId=
-    	--Thumbnail Generation URL: https://app.powerbi.com/dashboardEmbed?dashboardId=
+    	* Report Launch URL: https://app.powerbi.com/dashboardEmbed?dashboardId=
+    	* Thumbnail Generation URL: https://app.powerbi.com/dashboardEmbed?dashboardId=
     * update
   * edit **PowerBI Service App Dashboard**
     * tick PBICloudV2
-    	--Report Launch URL: https://app.powerbi.com/dashboardEmbed?dashboardId=
-    	--Thumbnail Generation URL: https://app.powerbi.com/dashboardEmbed?dashboardId=
+    	* Report Launch URL: https://app.powerbi.com/dashboardEmbed?dashboardId=
+    	* Thumbnail Generation URL: https://app.powerbi.com/dashboardEmbed?dashboardId=
     * update
    * edit **PowerBI Service Apps**
     * tick PBICloudV2
-    	--Report Launch URL: https://app.powerbi.com/groups/me/apps/
-    	--Thumbnail Generation URL: https://app.powerbi.com/groups/me/apps/
+      	* Report Launch URL: https://app.powerbi.com/groups/me/apps/
+    	* Thumbnail Generation URL: https://app.powerbi.com/groups/me/apps/
     * update
 * menu --> Administration setting --> Source Connection Details --> Click on Run Complete [>]
 * Copy solr url *only* ```https://10.0.134.243:8984```
