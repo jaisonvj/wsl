@@ -187,8 +187,8 @@ Unblock-File *.ps1
 * menu --> Administration setting --> add solr url --> update
 * menu --> Administration setting --> Source Connection Details --> Click on job histroy(Should be green color)
 * menu --> steward managment -->categorized report
-  	* PowerBI-->*Apps-->*vine_Linux_Testing--> : left click(Assign permission)-->*select-->+adduser-->hruser-->HRUSER USER*-->Done
-  	* PowerBI-->*Workspace-->*vine_Linux_Testing-->*MichelleTest--> : left click(Assign permission)-->*select-->+adduser-->hruser-->HRUSER USER*-->Done
+  	* PowerBI-->*Apps-->*vine_Linux_Testing--> : left click(Assign permission)-->*select-->+adduser-->search hruser-->HRUSER USER *-->Done
+  	* PowerBI-->*Workspace-->*vine_Linux_Testing-->*MichelleTest--> : left click(Assign permission)-->*select-->+adduser-->search hruser-->HRUSER USER *-->Done
   * Click on *Pusblish button* top
 * menu --> Report Statistics(we should see graphs here)
 * check main search with vi, the related document should display
