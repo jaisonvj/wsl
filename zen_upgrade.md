@@ -183,6 +183,7 @@ Unblock-File *.ps1
     	Thumbnail Generation URL: https://app.powerbi.com/groups/me/apps/
     * update
 * menu --> Administration setting --> Source Connection Details --> Click on Run Complete [>]
-* Copy solr url ###only https://10.0.134.243:8984
+* Copy solr url *only* ```https://10.0.134.243:8984```
+* 
 
 
