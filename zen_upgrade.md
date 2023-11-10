@@ -14,6 +14,10 @@
   * zenoptics_sqlserver_schema_script
   * zenoptics_sqlserver_create_script
   * zenoptics_sqlserver_insert_script
+  * check the database created properly by
+  ```
+   SELECT COUNT(*)FROM information_schema.tables WHERE table_schema = 'zenoptics';
+  ```
 ## 2) Utilities - file
 * -->properties file-->quartz_sqlserver.properties
 * Replace to template and copy to quartz.properties in zenoptics folder
@@ -45,24 +49,96 @@ applicationBaseURL=http\://{apphost}\:{appport}/com.zenoptics.services/jaxrs
 	<dataSource type="JdbcDataSource"
             driver="com.microsoft.sqlserver.jdbc.SQLServerDriver"
             url="jdbc:sqlserver://{hostname}:{port};database=zenoptics;trustServerCertificate=true"
-			      user="{username}"
+            user="{username}"
             password="{password}" 
-			      encryptKeyFile="{encryptkeypath}\encryptKey.ini" />
+            encryptKeyFile="{encryptkeypath}\encryptKey.ini" />
 	<document>
 ```
 * In **zenoptics/synoptics_conf/solrconfig.xml** search **sqlserver** and check line ```<str name="config">sqlserver-data-config.xml</str>``` is uncommented and ```<!-- <str name="config">mysql-data-config.xml</str> -->``` is commented
 * For ssl copy **zenoptics/synoptics_conf/solrconfig.xml** to **zenoptics/sqlserver-data-config-syn.xml**
-* Replace above 2-8 line of sqlserver_data_congig.xml by
+* Replace above 2-8 line of sqlserver_data_congig.xml by 2-12 below lines
 ```
 	<dataSource type="JdbcDataSource"
-      driver="com.microsoft.sqlserver.jdbc.SQLServerDriver"
-	    url="jdbc:sqlserver://{hostname}:{port};databaseName=zenoptics;encrypt=false;trustServerCertificate=true;"
-	    user="{username}"
-      password="{sslpassword}"
-	    useSSL="false" 
-      requireSSL="false" 
+            driver="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+            url="jdbc:sqlserver://{hostname}:{port};database=zenoptics;trustServerCertificate=true"
+            user="{username}"
+            password="{sslpassword}"
+            useSSL="false"
+            requireSSL="false" 
 	    fallbackToSystemKeyStore="false" 
 	    verifyServerCertificate="true"
-	    encryptKeyFile="{encryptkeypath}\encryptKey.ini" />
+            encryptKeyFile="{encryptkeypath}\encryptKey.ini" />
 	<document>
 ```
+
+* -->solr-->zenoptics_main_search_solr_core-->conf/*
+* copy all files in conf paste to zenoptics-->zen_analytics_conf/
+* edit **sqlserver_data_congig.xml** to template
+* 2 - 8
+```
+	<dataSource type="JdbcDataSource"
+            driver="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+            url="jdbc:sqlserver://{hostname}:{port};database=zenoptics;trustServerCertificate=true"
+            user="{username}"
+            password="{password}" 
+            encryptKeyFile="{encryptkeypath}\encryptKey.ini" />
+	<document>
+```
+* In **zenoptics/zen_analytics_conf/solrconfig.xml** search **sqlserver** and check line ```<str name="config">sqlserver-data-config.xml</str>``` is uncommented and ```<!-- <str name="config">mysql-data-config.xml</str> -->``` is commented
+* For ssl copy **zenoptics/zen_analytics_conf/solrconfig.xml** to **zenoptics/sqlserver-data-config-zen.xml**
+* Replace above 2-8 line of sqlserver_data_congig.xml by 2-12 below lines
+```
+	<dataSource type="JdbcDataSource"
+            driver="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+            url="jdbc:sqlserver://{hostname}:{port};database=zenoptics;trustServerCertificate=true"
+            user="{username}"
+            password="{sslpassword}"
+            useSSL="false"
+            requireSSL="false" 
+	    fallbackToSystemKeyStore="false" 
+	    verifyServerCertificate="true"
+            encryptKeyFile="{encryptkeypath}\encryptKey.ini" />
+	<document>
+```
+## 4) package registry
+* From gitlab copy **com.zenoptics.extractors-4.3.1.2.48807134.GA.war** to zenoptics folder
+* From gitlab copy **com.zenoptics.services-4.3.1.2.48807134.GA.war** to zenoptics folder
+## 5) update the chrom
+* lattest GoogleChromeEnterpriseBundle64.zip [Click here](https://chromeenterprise.google/browser/download/#windows-tab)
+* lattest chromedriver-win64.zip [Click here](https://googlechromelabs.github.io/chrome-for-testing/#stable)
+## 6) last step to fallow
+* zip **zenoptics** folder
+* rename main folder i.e **ZenOptics-WSS-4.3.1.2.48807134.GA**
+* inside input.ini change to new version i.e **extractors_war=com.zenoptics.extractors-4.3.1.2.48807134.GA.war** and **services_war=com.zenoptics.services-4.3.1.2.48807134.GA.war**
+* give necessory parameter in input.ini to check
+## 7) execution
+
+![image1](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-10%20122801.png)
+![image2](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-10%20123040.png)
+![image3](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-10%20123320.png)
+
+* open powershell as admin
+```
+cd C:\Users\Administrator\Downloads\ZenOptics-WSS-
+```
+```
+Unblock-File *.ps1
+```
+```
+.\clean-install.ps1
+```
+```
+.\zenbundle.ps1
+```
+* tomcat on 8080
+![image4](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-10%20125135.png)
+* solr on 8983
+![image5](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-10%20124809.png)
+*ssl
+* check this line before execution in script
+![image6]()
+```
+.\zenoptics-ssl-config.ps1
+```
+
+
