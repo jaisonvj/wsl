@@ -131,12 +131,15 @@ Unblock-File *.ps1
 .\zenbundle.ps1
 ```
 * tomcat on 8080
+  
 ![image4](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-10%20125135.png)
 * solr on 8983
+  
 ![image5](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-10%20124809.png)
-*ssl
+
+* ssl:
 * check this line before execution in script
-![image6]()
+![image6](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-10%20130330.png)
 ```
 .\zenoptics-ssl-config.ps1
 ```
