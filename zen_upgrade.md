@@ -154,7 +154,7 @@ Unblock-File *.ps1
   * Tenant id: 535ab425-5c4d-4b58-9a3b-f1906e8e40b2
   * workspace filter : Include:Vine_Linux_Testing (take only one bcz it take more time)
   * App filter : Vine_Linux_Testing
-  * use generic user : No
+  * use generic user : yes (if username and password present)
   * Test connection
 * menu --> Administration setting --> Report types --> search (powerbi) 
   * edit **PowerBI Service Report**
@@ -184,6 +184,15 @@ Unblock-File *.ps1
     * update
 * menu --> Administration setting --> Source Connection Details --> Click on Run Complete [>]
 * Copy solr url *only* ```https://10.0.134.243:8984```
-* 
+* menu --> Administration setting --> add solr url --> update
+* menu --> Administration setting --> Source Connection Details --> Click on job histroy(Should be green color)
+* menu --> steward managment -->categorized report
+  	*PowerBI-->*Apps-->*vine_Linux_Testing--> : left click(Assign permission)-->*select-->+adduser-->hruser-->HRUSER USER*-->Done
+  		|->*Workspace-->*vine_Linux_Testing-->*MichelleTest--> : left click(Assign permission)-->*select-->+adduser-->hruser-->HRUSER USER*-->Done
+  * Click on *Pushlish button* top
+* menu --> Report Statistics(we should see graphs here)
+* check main search with vi, the related document should display
+* menu --> Reports --> my reports --> click on any report --. it should launch login page
+
 
 
