@@ -54,6 +54,48 @@ tail -f /opt/splunkforwarder/var/log/splunk/splunkd.log
 
 
 
+Use the systemctl command with the list-units option and the type filter:
+
+```
+systemctl list-units --type=service --all
+```
+```
+service --status-all
+```
+
+## Uninstalling the splunk
+
+1. Stop Splunk Enterprise. You can do this by running the following command in your terminal:
+```
+sudo /opt/splunk/bin/splunk stop
+```
+2. Disable Splunk from starting at boot. You can do this by running the following command in your terminal:
+```
+sudo /opt/splunk/bin/splunk disable boot-start
+```
+3. Remove the Splunk package. You can do this by running the following command in your terminal:
+```
+sudo apt remove splunk
+```
+4. Find and kill any lingering processes that contain “splunk” in their name1.
+```
+kill -9 <pid>
+```
+6. Remove the Splunk Enterprise installation directory, $SPLUNK_HOME1.
+```
+sudo rm -rf /opt/splunk
+```
+
+## Transferring file through ssh in powershell and linux shell
+
+1. Folder
+```
+scp -r -P 2222 ZenOptics-LMY-1.1 ec2-user@127.0.0.1:~
+```
+2. file
+```
+scp -P 2222 ZenOptics-LMY-1.1.txt ec2-user@127.0.0.1:~
+```
 
 
 
