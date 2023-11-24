@@ -63,6 +63,24 @@ systemctl list-units --type=service --all
 service --status-all
 ```
 
+## Installing the splunk enterprise
+
+1. Download the rpm package from splunk enterprise download
+```
+wget -O splunk-9.1.2-b6b9c8185839.x86_64.rpm "https://download.splunk.com/products/splunk/releases/9.1.2/linux/splunk-9.1.2-b6b9c8185839.x86_64.rpm"
+```
+2. Unpack the downloaded package
+```
+sudo rpm -i splunk-9.1.2-b6b9c8185839.x86_64.rpm
+```
+3. accept the license and create user and password
+```
+sudo /opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd Root@123 
+```
+4. Go browser and open **http://ipaddress:8000**
+5. Navigate to 
+
+
 ## Uninstalling the splunk
 
 1. Stop Splunk Enterprise. You can do this by running the following command in your terminal:
