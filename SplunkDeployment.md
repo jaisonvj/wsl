@@ -107,11 +107,18 @@ CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.access.file=readwri
 ```
 sudo systemctl restart tomcat
 ```
+* username : ```jmxuser```
+* password : ```Root@123```
+* jmx url : ```service:jmx:rmi:///jndi/rmi://localhost:9000/jmxrmi```
 
 7. Navigate to Find more apps and install
    * splunk add-on for tomcat
    * splunk add-on java managment extension
 ### splunk add-on for tomcat
+1. Account -> add -> Name : zen_tomcat_server
+                     Tomcat JMX URL : service:jmx:rmi:///jndi/rmi://localhost:9000/jmxrmi
+                     Tomcat JMX user name :
+                     Tomcat JMX password :
 ### splunk add-on java managment extension
 
 
