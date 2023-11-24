@@ -100,7 +100,7 @@ sudo nano /opt/tomcat/tomcat9/bin/setenv.sh
 CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote"
 CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.port=9000"
 CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.ssl=false"
-CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.authenticate=false"
+CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.authenticate=true"
 CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.password.file=Root@123"
 CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.access.file=readwrite"
 ```
@@ -119,20 +119,20 @@ sudo systemctl restart tomcat
      sudo mkdir /opt/splunk/etc/apps/config_explorer/local
      ```
      ```
-     sudo nano /opt/splunk/etc/apps/config_explorer/local/inputs.conf
+     sudo nano /opt/splunk/etc/apps/config_explorer/local/config_explorer.conf
      ```
      ```
      [global]
+     
      write_access = true
      hide_settings = false
      ```
-     
-     
-     
+  
+### splunk add-on java managment extension
+1. server -> add -> Name,jvm description,Connection type:url,username,password,server interval
 ### splunk add-on for tomcat
 1. Account -> add -> Name,url,username,password -> add
 2. 
-### splunk add-on java managment extension
 
 
 ## Uninstalling the splunk
