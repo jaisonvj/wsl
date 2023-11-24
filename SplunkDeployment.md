@@ -62,6 +62,20 @@ systemctl list-units --type=service --all
 ```
 service --status-all
 ```
+## Transferring file through ssh in powershell and linux shell
+
+1. Folder
+```
+scp -r -P 2222 ZenOptics-LMY-1.1 ec2-user@127.0.0.1:~
+```
+2. file
+```
+scp -P 2222 ZenOptics-LMY-1.1.txt ec2-user@127.0.0.1:~
+```
+3. SSH to system (enable passwordauthenticatiom yes in /etc/ssh/sshd_config, reload sudo service sshd restart)
+```
+ssh ec2-user@127.0.0.1 -p 2222
+```
 
 ## Installing the splunk enterprise
 
@@ -75,10 +89,13 @@ sudo rpm -i splunk-9.1.2-b6b9c8185839.x86_64.rpm
 ```
 3. accept the license and create user and password
 ```
-sudo /opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd Root@123 
+sudo /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd Root@123 
 ```
 4. Go browser and open **http://ipaddress:8000**
-5. Navigate to 
+5. Navigate to Find more apps and install
+### * splunk add-on for tomcat
+     
+   * splunk add-on java managment extension
 
 
 ## Uninstalling the splunk
@@ -104,16 +121,7 @@ kill -9 <pid>
 sudo rm -rf /opt/splunk
 ```
 
-## Transferring file through ssh in powershell and linux shell
 
-1. Folder
-```
-scp -r -P 2222 ZenOptics-LMY-1.1 ec2-user@127.0.0.1:~
-```
-2. file
-```
-scp -P 2222 ZenOptics-LMY-1.1.txt ec2-user@127.0.0.1:~
-```
 
 
 
