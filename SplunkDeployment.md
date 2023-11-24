@@ -112,13 +112,26 @@ sudo systemctl restart tomcat
 * jmx url : ```service:jmx:rmi:///jndi/rmi://localhost:9000/jmxrmi```
 
 7. Navigate to Find more apps and install
-   * splunk add-on for tomcat
    * splunk add-on java managment extension
+   * splunk add-on for tomcat
+   * config explorer
+     ```
+     sudo mkdir /opt/splunk/etc/apps/config_explorer/local
+     ```
+     ```
+     sudo nano /opt/splunk/etc/apps/config_explorer/local/inputs.conf
+     ```
+     ```
+     [global]
+     write_access = true
+     hide_settings = false
+     ```
+     
+     
+     
 ### splunk add-on for tomcat
-1. Account -> add -> Name : zen_tomcat_server
-                     Tomcat JMX URL : service:jmx:rmi:///jndi/rmi://localhost:9000/jmxrmi
-                     Tomcat JMX user name :
-                     Tomcat JMX password :
+1. Account -> add -> Name,url,username,password -> add
+2. 
 ### splunk add-on java managment extension
 
 
