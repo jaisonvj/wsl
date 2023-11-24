@@ -92,10 +92,27 @@ sudo rpm -i splunk-9.1.2-b6b9c8185839.x86_64.rpm
 sudo /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd Root@123 
 ```
 4. Go browser and open **http://ipaddress:8000**
-5. Navigate to Find more apps and install
-### * splunk add-on for tomcat
-     
+5. Enable the remote jmx
+```
+sudo nano /opt/tomcat/tomcat9/bin/setenv.sh
+```
+```
+CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote"
+CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.port=9000"
+CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.ssl=false"
+CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.authenticate=false"
+CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.password.file=Root@123"
+CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote.access.file=readwrite"
+```
+```
+sudo systemctl restart tomcat
+```
+
+7. Navigate to Find more apps and install
+   * splunk add-on for tomcat
    * splunk add-on java managment extension
+### splunk add-on for tomcat
+### splunk add-on java managment extension
 
 
 ## Uninstalling the splunk
