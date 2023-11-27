@@ -88,6 +88,7 @@ wget -O splunk-9.1.2-b6b9c8185839.x86_64.rpm "https://download.splunk.com/produc
 sudo rpm -i splunk-9.1.2-b6b9c8185839.x86_64.rpm
 ```
 3. change the default java
+   
    ```
    wget https://corretto.aws/downloads/latest/amazon-corretto-11-x64-linux-jdk.rpm
    ```
@@ -95,7 +96,7 @@ sudo rpm -i splunk-9.1.2-b6b9c8185839.x86_64.rpm
    sudo yum localinstall amazon-corretto-11-x64-linux-jdk.rpm
    ```
    ```
-   sudo nano splunk-launch.conf
+   sudo nano /opt/splunk/etc/splunk-launch.conf
    ```
    ```
    #java home
