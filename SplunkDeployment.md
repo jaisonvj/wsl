@@ -93,7 +93,7 @@ sudo rpm -i splunk-9.1.2-b6b9c8185839.x86_64.rpm
    wget https://corretto.aws/downloads/latest/amazon-corretto-11-x64-linux-jdk.rpm
    ```
    ```
-   sudo yum localinstall amazon-corretto-11-x64-linux-jdk.rpm
+   sudo yum localinstall amazon-corretto-11-x64-linux-jdk.rpm -y
    ```
    ```
    sudo nano /opt/splunk/etc/splunk-launch.conf
