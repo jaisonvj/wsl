@@ -684,3 +684,27 @@ deploy_image:
 * Use group runner by configuring **home page(gitlab icon) > groups > new group > create new group > fill all details > we can add project**
 * now open group **settings > ci-cd > runners > group runner** or **Build > runners > new group runner**  
 
+## 29. Self-Managed GitLab Instance
+* for security reasons.
+* have full control over your infrastructure.
+* have unused servers you want utilize.
+* save infrastructure costs.
+
+## 30. GitLab Runner versions
+* GitLab instance and GitLab runner are the seperate program installed on separate machines.
+* GitLab runner major.minor version should stay in sync with the gitlab major and minor version.
+* Between minor version update, backward compatibility is guaranteed, but new features may require runner to be on the same minor version.
+* if you use gitlab.com with own runner keep runner updated to the latest version, because gitlab.com update continuously!
+
+## 31. Recape of GitLab Architecture
+* we have Gitlab as saas or self-managed.
+* 3 runners that can be registered to gitlab instance i.e shared, specific, group
+* commonly used executor shell(windows,linux,macos), docker, k8s executor etc
+* runners are reffered using *tags*.
+
+## 32. Real life pipeline demo
+* we build real-life pipeline for nodejs applicatiom.
+* Our work floew would be **run unit tests(testing individual code components) > run SAST(Static application security testing for vulnerabilities) > build docker image(Dockerfile) > push to Docker Registry > deploy to DEV server (ec2) >Promote to STAGING > Promote to PRODUCTION**
+* how to increment version of docker image dynamically.
+* *.gitignore* file tells git which files to ignore when committing your project to the repository eg: files and folders , which are aren't useful to other team members like test result xml file.
+* 
