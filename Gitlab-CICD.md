@@ -526,6 +526,7 @@ run_unit_tests:
     - echo "Running tests ..."
   after_script:
     - echo "Cleaning up temporary files.."
+
 ```
 ## 20. Specific runner
 * for security, jobs with specific requirements, projects with lot of ci activity
@@ -562,6 +563,124 @@ run_unit_tests:
   [Click here](https://docs.gitlab.com/runner/install/linux-repository.html)
   ![image6](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-11-08%20133509.png)
 ## 26. Execute jobs on specific Runners
-* 
+* By default our jobs runs on shared runner.
+* We can run our job in specific runner by mentioning the **tags** in the job that we given to our runner.
+```yml
+image: alpine:3.18.4
 
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+stages:
+  - test
+  - build
+  - deploy
+  
+run_unit_tests:
+  tags:
+    - ec2
+    - aws
+    - remote
+  image: node:17-alpine
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+    - npm version
+  script:
+    - echo "Running tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+run_lint_tests:
+  tags:
+    - local
+    - windows
+  stage: test
+  before_script:
+    - echoss "preparing test data ..."
+  script:
+    - echo "Running lint tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+```
+## 27. Add runner with Docker Executor
+* Register a new runner
+* Install a docker in new runner
+* we can register multiple executor in same runner i.e docker, shell
+```yml
+image: alpine:3.15.1
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  image_repository: docker.io/my-docker-id/myapp
+  image_tag: v1.0
+  
+run_unit_tests:
+  image: node:17-alpine3.14
+  tags:                                       # uses wsl-docker-runner(project runner) with docker executor                                           
+    - docker                                                                        
+    - wsl
+    - local
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+  script:
+    - echo "Running tests ..."
+    - npm version
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+run_lint_tests:
+  tags:                                       # uses wsl-shell-runner(project runner) with shell executor
+    - shell
+    - wsl
+    - local
+  stage: test
+  before_script:
+    - echo "preparing test data ..."
+  script:
+    - echo "Running lint tests ..."
+  after_script:
+    - echo "Cleaning up temporary files.."
+
+build_image:                                   # by default uses shared runner with docker executor with image: alpine:3.15.1
+  only:
+    - main
+  stage: build
+  script:
+    - echo "Building the docker image..."
+    - echo "tagging the docker image"
+
+push_image:
+  only:
+    - main
+  needs:
+    - build_image
+  stage: deploy
+  script:
+    - echo "logging into docker registry..."
+    - echo "pushing docker image to registry..."
+
+deploy_image:
+  only:
+    - main
+  stage: deploy
+  script:
+    - echo "deploying docker image to dev server..."
+```
+## 28. Group Runners(specific runner for multiple project)
+* To use same runner for multiple project we can unlock it by **settings > ci-cd > runners > edit on runner > uncheck When a runner is locked, it cannot be assigned to other projects**
+* Use group runner by configuring **home page(gitlab icon) > groups > new group > create new group > fill all details > we can add project**
+* now open group **settings > ci-cd > runners > group runner** or **Build > runners > new group runner**  
 
