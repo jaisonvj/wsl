@@ -707,4 +707,36 @@ deploy_image:
 * Our work floew would be **run unit tests(testing individual code components) > run SAST(Static application security testing for vulnerabilities) > build docker image(Dockerfile) > push to Docker Registry > deploy to DEV server (ec2) >Promote to STAGING > Promote to PRODUCTION**
 * how to increment version of docker image dynamically.
 * *.gitignore* file tells git which files to ignore when committing your project to the repository eg: files and folders , which are aren't useful to other team members like test result xml file.
-* 
+
+## 33. Run unit test
+* jobs can output an archive of files and directories.This output is called a job artifacts.
+* **artifacts:reports** --> different reports like reports, code quality reports, security reports can be collected.
+* **junit** --> collects JUnit report XML files.
+* These are uploaded to GitLab as an artifact. 
+* Artifact can be downloaded from **Build > pipelines > click on download button**
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always              # upload report when test fail
+    paths:
+      - app/junit.xml         # Downloaded artifact will be in file structured format ( generally used when we have multiple files)
+    reports:
+      junit: app/junit.xml    # junit(report type) and app/junit.xml(location where report found) generally used to get junit visulisation in pipeline we use this
+  
+```
