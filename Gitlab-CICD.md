@@ -862,4 +862,380 @@ push_image:
 * we can define variable while running pipeline by **build > pipeline > run pipeline > add variable MICROSERVICE**
 * we can define it globally by **settings > ci/cd > variables > add verable**
 * we can also define within the pipeline script.
+  
+## 35. Deploy to DEV Server
+* Create and configure the development server
+* Create a new ec2-instance and create a new key pair for ec2-instance to ssh in aws
+* ssh to ec2-instance and install docker
+```sh
+sudo apt update
+sudo apt install docker.io
+sudo usermod -aG docker $USER
+```
+* To GitLab we needed to give the private key(.pem) of deployment server to connect.
+* provide key through variable **settings > variables > add variable > key:SSH_PRIVATE_KEY, value:<content of .pem> > check protect variable > Type:File add variable**
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
 
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+
+stages:
+  - test
+  - build
+  - deploy
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$IMAGE_TAG  # all docker commands are available at deploy > container registry
+  
+deploy_to_dev:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+  script:
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@<public ip > "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    docker run -d -p 3000:3000 $IMAGE_NAME:$IMAGE_TAG"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker run -d -p 3000:3000 $IMAGE_NAME:$IMAGE_TAG
+```
+* In security group edit inbound rule to allow port 3000 from anywhere.
+* now website is accessable in browser.
+
+## 36. GitLab Environments
+* we use it to redirect to application url when we click on open on env we setted.
+* if no environment with that name exists, a new one is created
+* for environment navigate to **operate > Environment >** now we can see development environment we configured here
+* GitLab provides a full histroy of deployment of each environment.
+* you can always know what is deployed on your servers.
+```yml
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+  DEV_ENDPOINT: http://192.168.49.237:3000
+
+stages:
+  - test
+  - build
+  - deploy
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$IMAGE_TAG  # all docker commands are available at deploy > container registry
+  
+deploy_to_dev:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+  script:
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@<public ip > "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    docker run -d -p 3000:3000 $IMAGE_NAME:$IMAGE_TAG"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker run -d -p 3000:3000 $IMAGE_NAME:$IMAGE_TAG
+  environment:
+    name: development
+    url: $DEV_ENDPOINT
+
+```
+## 37. CD with Docker-Compose
+* Docker run works only for first time because of port is already occupied.
+* Docker Compose is a tool to define and run multiple containers.
+* Everything is defined in one YAML file.
+* you can spin everything up and tear it all down with just single command.
+* create a file in home called **docker-compose.yml**
+```yml
+version: "3.3"
+services:
+  app:
+    image: registry.gitlab.com/jaisonvj/mynodeapp-cicd-project:1.1 # image name in [ deploy > container registry > image > tag(copy to clipboard) ]
+    ports:
+      - 3000:3000
+    # above is same as docker run -p 3000:3000 $IMAGE_NAME:$IMAGE_TAG
+```
+* use above instead of docker run to start the container.
+* we needed to install docker compose in development server to run docker compose file
+```sh
+sudo apt install docker-compose
+```
+* whole code docker-compose available for gitlab,git-lab runner but not development server, so copy file from gitlab runner to dev server
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+  DEV_ENDPOINT: http://192.168.49.237:3000
+
+stages:
+  - test
+  - build
+  - deploy
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$IMAGE_TAG  # all docker commands are available at deploy > container registry
+  
+deploy_to_dev:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@<public ip>:/home/ubuntu #copy docker compose file
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@<public ip> "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    docker-compose -f docker-compose.yaml down &&
+    #    docker-compose -f docker-compose.yaml up -d"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - pwd
+    - docker-compose -f docker-compose.yaml down # stop all container and not fail if no container is running
+    - docker-compose -f docker-compose.yaml up -d # run in detached mode
+  environment:
+    name: development
+    url: $DEV_ENDPOINT
+```
+* lets optimise the above things
+* lets it use default docker-compose.yaml in home directory, withot specifying -f
+* lets replace with variable that is hard coded in docker-compose and version change to *dynamically set*
+* for deployment server we needed to export the variable and in gitlab runner we can declare globally or export the variable.
+* optimised **docker-compose.yaml**
+```yml
+version: "3.3"
+services:
+  app:
+    image: ${DC_IMAGE_NAME}:${DC_IMAGE_TAG} # image name in [ deploy > container registry > image > tag(copy to clipboard) ]
+    ports:
+      - 3000:3000
+    # above is same as docker run -p 3000:3000 $IMAGE_NAME:$IMAGE_TAG
+```
+* optimised **.gitlab-ci.yml**
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+  DEV_ENDPOINT: http://192.168.49.237:3000
+
+stages:
+  - test
+  - build
+  - deploy
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$IMAGE_TAG  # all docker commands are available at deploy > container registry
+  
+deploy_to_dev:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@<public ip>:/home/ubuntu #copy docker compose file
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@<public ip> "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #    export DC_IMAGE_TAG=$IMAGE_TAG &&
+    #    docker-compose -f docker-compose.yaml down &&
+    #    docker-compose -f docker-compose.yaml up -d"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - pwd
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$IMAGE_TAG
+    - docker-compose down # stop all container and not fail if no container is running
+    - docker-compose up -d # run in detached mode
+  environment:
+    name: development
+    url: $DEV_ENDPOINT
+```
