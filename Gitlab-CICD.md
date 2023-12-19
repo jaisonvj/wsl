@@ -1239,3 +1239,6 @@ deploy_to_dev:
     name: development
     url: $DEV_ENDPOINT
 ```
+## 38.Extend and optimize pipeline to a real life pipeline
+* Dynamic versioning --> dynamically set an increment version when we build the docker image.
+* add 3 more job (static application security test, dev-->staging-->production). 
