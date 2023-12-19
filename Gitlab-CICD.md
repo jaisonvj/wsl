@@ -740,3 +740,126 @@ run_unit_tests:
       junit: app/junit.xml    # junit(report type) and app/junit.xml(location where report found) generally used to get junit visulisation in pipeline we use this
   
 ```
+## 34. Build and push docker image
+* Every GitLab project can have its own space to store its docker images.
+* usage of package registry **Deploy > package registry(use GitLab as a private or public registry for variety of support package managers eg: maven,npm,pypl,NuGet)**
+* usage of container registry **Deploy > container registry(registry to store docker image)**
+* we needed to authenticate before we push the image. (using username and password, token or multifactor)
+* GitLab provides temporary credentials for the container registry in your CI/CD pipeline( CI_REGISTRY_USER and CI_REGISTRY_PASSWORD in pre-defined env variable).
+* once the image is build later it is pushed to container registry of GitLab.
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+stages:
+  - test
+  - build
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  script:
+    - docker build -t registry.gitlab.com/jaisonvj/mynodeapp-cicd-project:1.0 .
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD registry.gitlab.com
+  script:
+    - docker push registry.gitlab.com/jaisonvj/mynodeapp-cicd-project:1.0  # all docker commands are available at deploy > container registry
+```
+* improved code using ENV variable
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE/microservice/$MICROSERVICE
+  IMAGE_TAG: "1.0"
+
+stages:
+  - test
+  - build
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$IMAGE_TAG  # all docker commands are available at deploy > container registry
+```
+* we can define variable while running pipeline by **build > pipeline > run pipeline > add variable MICROSERVICE**
+* we can define it globally by **settings > ci/cd > variables > add verable**
+* we can also define within the pipeline script.
+
