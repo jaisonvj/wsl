@@ -1241,4 +1241,237 @@ deploy_to_dev:
 ```
 ## 38.Extend and optimize pipeline to a real life pipeline
 * Dynamic versioning --> dynamically set an increment version when we build the docker image.
-* add 3 more job (static application security test, dev-->staging-->production). 
+* add 3 more job (static application security test, dev-->staging-->production).
+
+## 39. Dynamic versioning
+* when ever a pipeline run new image tag has to be build.
+* application versioning 1.4.2(major, minor, patch)
+* major changes - related to incompatible API changes. eg: Replace Framework, New feature
+* minor changes - new function in a backward-compatible manner. eg: new minor feature, bigger bugfix
+* patch changes - related to small bugfixes and changes, which are backward compatible. eg: small changes, bugfix
+* version is defined in the configuration file of the package manager / build tool of the application. eg: npm, maven, gradle, yarn
+* in our application we use npm. where version is defined in package.json
+* now we want to read application verion from package.json
+* To parse json query. please install **jq tool** in the runner
+```sh
+sudo apt install jq
+```
+* Every job gets executed in its own new environment, so variables available only in the job it was defined.
+* How do we pass **data between jobs ?**
+* For this we use artifacts attribute.
+* The artifacts are Send to GitLab after the job finishes and available for download in the GitLab UI.
+* we save the version in a file and once job is finished file is uploaded to the gitLab artifact.
+* later we import this for other JOB.
+* By **default** jobs in the later stages automatically download all the artifacts created by jobs in earlier stages.
+* For jobs in the same stage, the artifacts **won't be downloaded** automatically.
+* To download the artifacts in same stage we use **"dependencies"** attribute to define a list of jobs to fetch artifacts from.
+* with empty array i.e **dependencies: []**, you configure the job to not download any artifacts.
+* BY default **needs** artifacts from the job listed will be downloaded.
+* There is no need to define "dependencies" separately.
+*  
+* open **.gitlab-ci.yml**
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+  DEV_ENDPOINT: http://192.168.49.237:3000
+
+stages:
+  - test
+  - build
+  - deploy
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - export PACKAGE_JSON_VERSION=$(cat app/package.json | jq -r .version)      #json query helps to pare json object and get value of it
+    - export VERSION=$PACKAGE_JSON_VERSION-$CI_PIPELINE_IID
+    - echo $VERSION > version-file.txt
+  script:
+    - docker build -t $IMAGE_NAME:$VERSION .
+  artifacts:
+    paths:
+      - version-file.txt
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  #dependencies:                                # to avilable artifact of previous job in same stage
+    #- build_image 
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - export VERSION=$(cat version-file.txt)
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$VERSION 
+  
+deploy_to_dev:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+    - export VERSION=$(cat version-file.txt)
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@<public ip>:/home/ubuntu #copy docker compose file
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@<public ip> "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #    export DC_IMAGE_TAG=$VERSION &&
+    #    docker-compose -f docker-compose.yaml down &&
+    #    docker-compose -f docker-compose.yaml up -d"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - pwd
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$VERSION
+    - docker-compose down # stop all container and not fail if no container is running
+    - docker-compose up -d # run in detached mode
+  environment:
+    name: development
+    url: $DEV_ENDPOINT
+```
+* Dotenv File is a npm package that automatically loads environment variables from a .env file into the processand alos in Gitlab.
+* Dotenv Format , one variable defination per line, each line must be of the form: VARIABLE_NAME=ANY_VALUE
+* collected variables are registered as runtime-created variables of the job.
+* jobs in later stages can use the variable in the scripts.
+* same dependency and needs rules apply here
+    1. All artifacts of previous stage is available to next stage by defaults.
+    2. All artifacts of previous job in same stage is not available to next job in same stage by default.
+    3. To available the artifacts of same stage from previous job to next job we can use **dependency** attribute , if in case **needs** atribute already used then there is no needed use of dependency attribute.
+    5. if in case we not needed to inherite the artifacts from prvious stage or job, we can set **dependency: []**
+       
+```yml
+  workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+  DEV_ENDPOINT: http://192.168.49.237:3000
+
+stages:
+  - test
+  - build
+  - deploy
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - export PACKAGE_JSON_VERSION=$(cat app/package.json | jq -r .version)      #json query helps to pare json object and get value of it
+    - export VERSION=$PACKAGE_JSON_VERSION-$CI_PIPELINE_IID
+    - echo "VERSION=$VERSION" >> build.env
+    - echo "MY_ENV=value" >> buid.env
+  script:
+    - docker build -t $IMAGE_NAME:$VERSION .
+  artifacts:
+    reports:
+      dotenv: build.env
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  #dependencies:                                # to avilable artifact of previous job in same stage
+    #- build_image 
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$VERSION 
+  
+deploy_to_dev:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@<public ip>:/home/ubuntu #copy docker compose file
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@<public ip> "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #    export DC_IMAGE_TAG=$VERSION &&
+    #    docker-compose -f docker-compose.yaml down &&
+    #    docker-compose -f docker-compose.yaml up -d"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - pwd
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$VERSION
+    - docker-compose down # stop all container and not fail if no container is running
+    - docker-compose up -d # run in detached mode
+  environment:
+    name: development
+    url: $DEV_ENDPOINT
+```
