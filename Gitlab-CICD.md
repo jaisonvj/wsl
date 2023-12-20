@@ -1519,3 +1519,265 @@ deploy_to_dev:
 ```
 cache_dir = "/cache"
 ```
+* In job2 terminal, under npm install command , if uptodate is present. then cache is working fine
+![image8](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-20%20165332.png)
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+  DEV_ENDPOINT: http://localhost:3000
+
+stages:
+  - test
+  - build
+  - deploy
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  cache:
+    key: "$CI_COMMIT_REF_NAME"  # Gives name to cache by variable(The branch or tag name for which project is built).
+    paths:
+      - app/node_modules
+    policy: pull-push          # download and when job is finshes uploads or updates the cache
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+run_lint_checks:
+  image: node:17-alpine3.14
+  stage: test
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    paths:
+      - app/node_modules
+    policy: pull                      #only download no upload
+  tags:
+    - docker  
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - echo "Running lint checks"
+    
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - export PACKAGE_JSON_VERSION=$(cat app/package.json | jq -r .version)      #json query helps to pare json object and get value of it
+    - export VERSION=$PACKAGE_JSON_VERSION-$CI_PIPELINE_IID
+    - echo "VERSION=$VERSION" >> build.env
+    - echo "MY_ENV=value" >> buid.env
+  script:
+    - docker build -t $IMAGE_NAME:$VERSION .
+  artifacts:
+    reports:
+      dotenv: build.env
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  #dependencies:                                # to avilable artifact of previous job in same stage
+    #- build_image 
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$VERSION 
+  
+deploy_to_dev:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@<public ip>:/home/ubuntu #copy docker compose file
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@<public ip> "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #    export DC_IMAGE_TAG=$VERSION &&
+    #    docker-compose -f docker-compose.yaml down &&
+    #    docker-compose -f docker-compose.yaml up -d"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - pwd
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$VERSION
+    - docker-compose down # stop all container and not fail if no container is running
+    - docker-compose up -d # run in detached mode
+  environment:
+    name: development
+    url: $DEV_ENDPOINT
+
+```
+* This is a way to speed up your job execution by reusing existing data.
+* **Clearing the cache**
+* nagivate to **CI/CD > pipelines > click on Clear runner caches**.
+* Clearing the caches manually will not delete old cache.
+* each time you clear the cache manually, the internal cache name is updated, old cache is not deleted eg: format "cache-index", index is incremented by one.
+* do delete old cache, we should ssh and maually locate it and delete it.
+* below image shows where cache stored in docker,shell and other executor.
+![image9](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-20%20172210.png)
+* To delete it permanently locate it by,
+![image10](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-20%20171428.png)
+![image11](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-20%20172602.png)
+* All caches defined for a job are archived in a single cache.zip file
+
+## 41. Testing in CI/CD Add SAST job
+* Now we will use SAST and DAST for security.
+* we include **job Templates**, these are specific jobs provided by GitLab, which you can included.
+* it is auto devops concept.
+* There are different type of testing such as unit Testing, Functional Testing, Integration Testing, API Testing, UI Testing, Regression Testing.
+* Developers and test engineers create test scenarios and write tests.
+* we will focus on running SAST tests, using existing GitLab jobs, which have everything pre-confiured and to include it in your own CI/CD pipeline.
+* **Template for SAST**
+* GitLab provide Job templates for different tasks and for different programming languages and technologies.
+* all templates are available at [Click here](https://gitlab.com/gitlab-org/gitlab-foss/tree/master/lib/gitlab/ci/templates)
+* to include any job template we have feature called **include:**
+* GitLab detects the programing langaue automatically when we include the template and that part of code is only executed.
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+  DEV_ENDPOINT: http://localhost:3000
+
+stages:
+  - test
+  - build
+  - deploy
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  cache:
+    key: "$CI_COMMIT_REF_NAME"  # Gives name to cache by variable(The branch or tag name for which project is built).
+    paths:
+      - app/node_modules
+    policy: pull-push          # download and when job is finshes uploads or updates the cache
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+sast:
+  stage: test
+  
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - export PACKAGE_JSON_VERSION=$(cat app/package.json | jq -r .version)      #json query helps to pare json object and get value of it
+    - export VERSION=$PACKAGE_JSON_VERSION-$CI_PIPELINE_IID
+    - echo "VERSION=$VERSION" >> build.env
+    - echo "MY_ENV=value" >> buid.env
+  script:
+    - docker build -t $IMAGE_NAME:$VERSION .
+  artifacts:
+    reports:
+      dotenv: build.env
+
+push_image:
+  stage: build
+  needs:
+    - build_image 
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$VERSION 
+  
+deploy_to_dev:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@<public ip>:/home/ubuntu #copy docker compose file
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@<public ip> "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #    export DC_IMAGE_TAG=$VERSION &&
+    #    docker-compose -f docker-compose.yaml down &&
+    #    docker-compose -f docker-compose.yaml up -d"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - pwd
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$VERSION
+    - docker-compose down # stop all container and not fail if no container is running
+    - docker-compose up -d # run in detached mode
+  environment:
+    name: development
+    url: $DEV_ENDPOINT
+
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+
+```
+* **Pipeline Templates** it provides an end-to-end CI/CD workflow.
+* it's not included in another main pipeline configuration, but rather used by itself
+* go to project which doesnot have pipeline navigate to **CI/CD > Pipelines > scroll down to see list of pipeline templates**
+
+## 42. CD - Promote to Staging and Production
+
+
