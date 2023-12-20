@@ -1475,3 +1475,47 @@ deploy_to_dev:
     name: development
     url: $DEV_ENDPOINT
 ```
+## 40. Caching in GitLab CI/CD Speed up the pipeline
+* make the pipeline faster.
+* each job runs in its own isolated environment.
+* Starting from a fresh new environment jobs don't affect each other, no unexpected side-effects.
+* generally used when we want the dependency to reuse in the job.
+* Downloading the multiple package takes time, this slows down the CI/CD
+* We neede node_modules(folder stored all downloaded dependency) from previous pipeline run, instead of downloading from the internet again.
+* Artifacts vs Cache
+* **Artifacts**
+* Job artifacts get uploaded and save on the GitLab server and made available for the jobs.
+* Use artifacts to pass intermediate build result between stages
+* **Cache**
+* use cache for dependencies, like packages you downloaded from the internet.
+* cache is stored in GitLab Runner!
+* if the jobs run on the same runner, they can re-use the local cache on the server.
+* **Distributed cache**
+* For caches to work efficiently, use less runners for all your jobs
+* A cache would need to be created on each runner's server
+* configure a distributed caching, if you use multiple runners eg:cache is stored in S3 buckets(Central cache storage)
+* Download from remote storage again over the internet.
+* still faster to download 1 zip file,instead of each dependency separately.
+* **Configure a Cache**
+* it is defined using cache attribute.
+* give each cache a unique identifying key, if not set the default key is "default"
+* all jobs that use the same cache key use the same cache.
+* Common naming of cache keys are cache_main,cache_dev, the jobs that run for a specific branch, will share the same cache.
+* Instead of using a hardcoded string, you can use a predefined variables or a combination of the string and variable.
+* pull-push --> job downloads the cache when the job starts and upload changes to the cache when the job ends.its a default policy.
+* **Linting**
+* A "Linter" is a static code analysis tool, it checks your source code for programming errors and stylistic error.
+* **Configure Volume for Docker Executor**
+* while two job uses the same cache ,while running in parallel it causes the error so give second one for pull permission, which download the cache never upload the cache.
+* we will be also using npm install because our job should never depends on a cache to be available, caching is an optimisation, but it isn't guaranteed to always work.
+* we can also have seperate job to push the cache and use pull in other job also.
+* If we are using docker executor the problem is cache gets created inside the container, when job finishes, the container is removed.
+* By default, data inside is not persisted.
+* for this we needed to configure docker volume, which replicate the data to host.
+* all the runner configaration stored in **/etc/gitlab-runner/config.tomal**
+* Here we can see runners and configured executor.
+* To persist the cache add the cache directory in /etc/gitlab-runner/config.tomal of docker runner session i.e
+![image7](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-20%20134741.png)
+```
+cache_dir = "/cache"
+```
