@@ -2648,3 +2648,15 @@ deploy_shopping_cart:
 * docker ps
 * docker network ls
 * docker inspect <networkId> | grep Network
+
+## 53 .CI/CD Polyrepo Demo
+* For Poly repo create a Group and Projects.
+* **HomePage > Group > Create Group > Group name:mymicroservice-cicd > make it as public > create**
+* Now create a project for frontend
+* **inside group > Create new project > Create blank project > Project name: frontend > public > create project**
+* Now create a project for products
+* **inside group > Create new project > Create blank project > Project name: products > public > create project**
+* Now create a project for shopping-cart
+* **inside group > Create new project > Create blank project > Project name: shopping-cart > public > create project**
+* Now copy Dockerfile, imdex.html, package.json, server.js from folder of mymicroservice-cicd project into the new project created in a mymicroservice-cicd group.
+  
