@@ -2333,7 +2333,7 @@ include:
 * we will aslo build a poly repo also.
 
 ## 49. Mono repo project overview
-* click here to fork the [project](https://gitlab.com/jaisonvj/mymicroservice-cicd)
+* click here to fork the [project](https://gitlab.com/nanuchi/mymicroservice-cicd)
 * test the project locally.
   
 ## 50. Monorepo Demo - 1 Prepare Deployment Server
@@ -2477,6 +2477,20 @@ build_shopping_cart:
 ## 52. Monorepo Demo - 3 Deploy Services
 * create a generic docker compose file
 * $SSH_PRIVATE_KEY is set to global variable
+* **Networking in Docker Compose:**
+* By default, Docker Compose sets up a single network for your app
+* all services listen in the compose file joind the default network.
+* to see all network in docker do, $docker network ls
+* Compose cretes a new docker network on every docker-compose up.
+* by default: the network name is based on the name of the directory the compose file resides. i.e <project-name>_default
+* COMPOSE_PROJECT_NAME=$MICRO_SERVICE  will overwrite both network and container prefix.
+* we our container in different network they cannot talk to each other.
+* we want all 3 container in same network, it can be done by overwritting the name of network that docker compose creates.
+* it can we do this by network attribute in docker compose.
+* In network micro_service will replace only _default part.
+* To replace prefix use name attribute under micro_service.
+* default driver used by docker compose is bridge we can use same thing.
+* Instead of creating an own network, Compose looks for a the defined network(created by command) and joins the containers in that defined network
 * **docker-compose.yaml**
 ```yml
 version: "3.3"
@@ -2489,7 +2503,148 @@ services:
       - micro_service
 networks:
   micro_service:
-    external:
-      name: micro_service
+    external:     #use already created network, donot create new one
+      name: micro_service #refer this network inside docker to micro_service network which is created by $docker network create micro_service
+    
 ```
+* **.gitlab-ci.yml**
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"      
+      when: never
+    - when: always
+
+variables:
+  DEPLOYMENT_SERVER_HOST: "localhost"
+  APP_ENDPOINT: http://localhost:3000
+
+stages:
+  - build
+  - deploy
+
+.build:
+  stage: build
+  tags:
+    - wsl
+    - local
+    - shell
+  variables:
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+  before_script:
+    - cd $MICRO_SERVICE
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+
+
+build_frontend:
+  extends: .build
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+  only:
+    changes:
+      - "frontend/**/*"
+
+build_products:
+  extends: .build
+  variables:
+    MICRO_SERVICE: products
+    SERVICE_VERSION: "1.8"
+  only:
+    changes:
+      - "products/**/*"
+
+build_shopping_cart:
+  extends: .build
+  variables:
+    MICRO_SERVICE: shopping-cart
+    SERVICE_VERSION: "2.1"
+  only:
+    changes:
+      - "shopping-cart/**/*"
   
+.deploy:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  variables: 
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+    APP_PORT: ""
+  before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@$DEPLOYMENT_SERVER_HOST:/home/ubuntu
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@$DEPLOYMENT_SERVER_HOST "
+    #  docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+
+    #  export COMPOSE_PROJECT_NAME=$MICRO_SERVICE && 
+    #  export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #  export DC_IMAGE_TAG=$IMAGE_TAG &&
+    #  export DC_APP_PORT=$APP_PORT &&
+
+    #  docker network create micro_service || true &&
+
+    #  docker-compose down &&
+    #  docker-compose up -d"
+     
+
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - export COMPOSE_PROJECT_NAME=$MICRO_SERVICE 
+    # above we learned earlier for container name.other wise all container will have same name
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$IMAGE_TAG 
+    - export DC_APP_PORT=$APP_PORT
+    - docker network create micro_service || true
+    # if above command files return true to ignore the issues during 2nd time creating network again
+    - docker-compose down 
+    - docker-compose up -d
+
+  environment:
+    name: development
+    url: $APP_ENDPOINT
+
+
+deploy_frontend:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+    APP_PORT: 3000
+  only:
+    changes:
+      - "frontend/**/*"
+
+deploy_products:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: products
+    SERVICE_VERSION: "1.8"
+    APP_PORT: 3001
+  only:
+    changes:
+      - "products/**/*"
+
+deploy_shopping_cart:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: shopping-cart
+    SERVICE_VERSION: "2.1"
+    APP_PORT: 3002
+  only:
+    changes:
+      - "shopping-cart/**/*"
+```
+* docker ps
+* docker network ls
+* docker inspect <networkId> | grep Network
