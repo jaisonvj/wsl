@@ -1779,5 +1779,717 @@ include:
 * go to project which doesnot have pipeline navigate to **CI/CD > Pipelines > scroll down to see list of pipeline templates**
 
 ## 42. CD - Promote to Staging and Production
+* In reallife we have 3 deployment environment (Deploy to Dev, Deploy to STAGING, Deploy to PROD)
+* In development stage we have(Functional tests, Integration tests, SAST tests), In staging we have( performance test, DAST tests), in production stage(End user can access the app).
+* create a 2 aws ec2 instance. for now we use all three stage in same server with different ports(3000, 4000, 5000).
+## 43. Multi-stage Demo - 2 Deploy to stage  
+* container created by docker compose will have,
+* container name will be in formate **<projectName>_<serviceName>_<index>**
+* By default, project name = current directory name.
+* To change export or set the variable **COMPOSE_PROJCT_NAME=<PROJECTNAME>**
+* using same docker compose we can create the container with different name with above env variable.
+* **docker-compose.yaml**
+```yml
+version: "3.3"
+services:
+  app:
+    image: ${DC_IMAGE_NAME}:${DC_IMAGE_TAG}
+    ports:
+      - ${DC_APP_PORT}:3000
+    # above is same as docker run -p 3000:3000 $IMAGE_NAME:$IMAGE_TAG
+```
+* **.gitlab-ci.yml**
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+  DEV_SERVER_HOST: localhost
+  DEV_ENDPOINT: http://localhost:3000
+  STAGING_SERVER_HOST: localhost
+  STAGING_ENDPOINT: http://localhost:4000 
+
+stages:
+  - test
+  - build
+  - deploy_dev
+  - deploy_staging
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  cache:
+    key: "$CI_COMMIT_REF_NAME"  # Gives name to cache by variable(The branch or tag name for which project is built).
+    paths:
+      - app/node_modules
+    policy: pull-push          # download and when job is finshes uploads or updates the cache
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+sast:
+  stage: test
+  
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - export PACKAGE_JSON_VERSION=$(cat app/package.json | jq -r .version)      #json query helps to pare json object and get value of it
+    - export VERSION=$PACKAGE_JSON_VERSION-$CI_PIPELINE_IID
+    - echo "VERSION=$VERSION" >> build.env
+    - echo "MY_ENV=value" >> buid.env
+  script:
+    - docker build -t $IMAGE_NAME:$VERSION .
+  artifacts:
+    reports:
+      dotenv: build.env
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  #dependencies:                                # to avilable artifact of previous job in same stage
+    #- build_image 
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$VERSION 
+  
+deploy_to_dev:
+  stage: deploy_dev
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@<public ip>:/home/ubuntu #copy docker compose file
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@$DEV_SERVER_HOST "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    export COMPOSE_PROJECT_NAME=dev &&
+    #    export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #    export DC_IMAGE_TAG=$VERSION &&
+    #    export DC_APP_PORT=3000 &&
+    #    docker-compose -f docker-compose.yaml down &&
+    #    docker-compose -f docker-compose.yaml up -d"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - pwd
+    - export COMPOSE_PROJECT_NAME=dev
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$VERSION
+    - export DC_APP_PORT=3000
+    - docker-compose down # stop all container and not fail if no container is running
+    - docker-compose up -d # run in detached mode
+  environment:
+    name: development
+    url: $DEV_ENDPOINT
+
+run_functional_tests:
+  stage: deploy_dev
+  needs:
+    - deploy_to_dev
+  script:
+    - echo "running functional tests"
+
+deploy_to_staging:
+  stage: deploy_staging
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@<public ip>:/home/ubuntu #copy docker compose file
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@$STAGING_SERVER_HOST "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    export COMPOSE_PROJECT_NAME=staging &&
+    #    export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #    export DC_IMAGE_TAG=$VERSION &&
+    #    export DC_APP_PORT=4000 &&
+    #    docker-compose -f docker-compose.yaml down &&
+    #    docker-compose -f docker-compose.yaml up -d"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - pwd
+    - export COMPOSE_PROJECT_NAME=staging #using same docker compose we can create the container with different name
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$VERSION
+    - export DC_APP_PORT=4000
+    - docker-compose down # looks for staging_app_1 and stops that container only, this s use of env COMPOSE_PROJECT_NAME 
+    - docker-compose up -d # run in detached mode
+  environment:
+    name: staging
+    url: $STAGING_ENDPOINT
+
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+
+```
+## 44. Multi-stage Demo - 3 Use extends to reuse code
+* Almost we are using same code for deploy, lets optimise it.
+* we have attribute called **"extends"** , which is used to reuse configuration sections, job inherits configuration from the other job.
+* be don't want generic job to execute. we just neede to extend it. so lets make that job as inactive or hide jobs by **.<jobName>**.
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+  DEV_SERVER_HOST: localhost
+  DEV_ENDPOINT: http://localhost:3000
+  STAGING_SERVER_HOST: localhost
+  STAGING_ENDPOINT: http://localhost:4000 
+
+stages:
+  - test
+  - build
+  - deploy_dev
+  - deploy_staging
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  cache:
+    key: "$CI_COMMIT_REF_NAME"  # Gives name to cache by variable(The branch or tag name for which project is built).
+    paths:
+      - app/node_modules
+    policy: pull-push          # download and when job is finshes uploads or updates the cache
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+sast:
+  stage: test
+  
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - export PACKAGE_JSON_VERSION=$(cat app/package.json | jq -r .version)      #json query helps to pare json object and get value of it
+    - export VERSION=$PACKAGE_JSON_VERSION-$CI_PIPELINE_IID
+    - echo "VERSION=$VERSION" >> build.env
+    - echo "MY_ENV=value" >> buid.env
+  script:
+    - docker build -t $IMAGE_NAME:$VERSION .
+  artifacts:
+    reports:
+      dotenv: build.env
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  #dependencies:                                # to avilable artifact of previous job in same stage
+    #- build_image 
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$VERSION 
+
+.deploy:                                               # it is a generic base job logic job
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+  variables:
+    #SSH_PRIVATE_KEY: ""
+    #SERVER_HOST: ""
+    DEPLOY_ENV: ""
+    APP_PORT: ""
+    ENDPOINT: ""
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@$SERVER_HOST:/home/ubuntu #copy docker compose file
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@$$SERVER_HOST "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    export COMPOSE_PROJECT_NAME=$DEPLOY_ENV &&
+    #    export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #    export DC_IMAGE_TAG=$VERSION &&
+    #    export DC_APP_PORT=$APP_PORT &&
+    #    docker-compose -f docker-compose.yaml down &&
+    #    docker-compose -f docker-compose.yaml up -d"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - pwd
+    - export COMPOSE_PROJECT_NAME=$DEPLOY_ENV
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$VERSION
+    - export DC_APP_PORT=$APP_PORT
+    - docker-compose down # stop all container and not fail if no container is running
+    - docker-compose up -d # run in detached mode
+  environment:
+    name: $DEPLOY_ENV
+    url: $ENDPOINT
+  
+deploy_to_dev:
+  extends: .deploy
+  stage: deploy_dev
+  variables:
+    #SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY
+    #SERVER_HOST: "DEV_SERVER_HOST"
+    DEPLOY_ENV: development
+    APP_PORT: 3000
+    ENDPOINT: $DEV_ENDPOINT
+  
+
+run_functional_tests:
+  stage: deploy_dev
+  needs:
+    - deploy_to_dev
+  script:
+    - echo "running functional tests"
+
+deploy_to_staging:
+  extends: .deploy
+  stage: deploy_staging
+  variables:
+    #SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY
+    #SERVER_HOST: "STAGING_SERVER_HOST"
+    DEPLOY_ENV: staging
+    APP_PORT: 4000
+    ENDPOINT: $STAGING_ENDPOINT
+
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+
+```
+## 45. Multi-stage Demo - 4 Deploy to PROD
+* in many real-life, many teams don't feel comfortable deploying to production automatically.
+* without any manual human review
+* pipeline deploys to development and staging environment automatically.
+* maually trigger the deployment to production environment by clicking the button.
+* it is done by **when:manual** , this job doesn't run, unless a user starts it manually.
+* we can see play button in pipeline for the job we setted manual.
+* GitLab as a bug, that when we set env variable to file , it gives the content of file not file path.
+* it can be solved by echoing the variable to file. and ssh -i wants file path not content.
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: "1.1"
+  DEV_SERVER_HOST: localhost
+  DEV_ENDPOINT: http://localhost:3000
+  STAGING_SERVER_HOST: localhost
+  STAGING_ENDPOINT: http://localhost:4000 
+  PROD_SERVER_HOST: localhost
+  PROD_ENDPOINT: http://localhost:5000 
+
+stages:
+  - test
+  - build
+  - deploy_dev
+  - deploy_staging
+  - deploy_prod
+
+run_unit_tests:
+  image: node:17-alpine3.14
+  stage: test
+  cache:
+    key: "$CI_COMMIT_REF_NAME"  # Gives name to cache by variable(The branch or tag name for which project is built).
+    paths:
+      - app/node_modules
+    policy: pull-push          # download and when job is finshes uploads or updates the cache
+  tags:
+    - docker
+    - wsl
+    - local
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always                 
+    paths:
+      - app/junit.xml          
+    reports:
+      junit: app/junit.xml    
+
+sast:
+  stage: test
+  
+build_image:
+  stage: build
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - export PACKAGE_JSON_VERSION=$(cat app/package.json | jq -r .version)      #json query helps to pare json object and get value of it
+    - export VERSION=$PACKAGE_JSON_VERSION-$CI_PIPELINE_IID
+    - echo "VERSION=$VERSION" >> build.env
+    - echo "MY_ENV=value" >> buid.env
+  script:
+    - docker build -t $IMAGE_NAME:$VERSION .
+  artifacts:
+    reports:
+      dotenv: build.env
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  #dependencies:                                # to avilable artifact of previous job in same stage
+    #- build_image 
+  tags:
+    - local
+    - wsl
+    - shell
+  before_script:
+    - echo "Docker registry url is $CI_REGISTRY"
+    - echo "Docker registry username is $CI_REGISTRY_USER"
+    - echo "Docker registry image repo is $CI_REGISTRY_IMAGE"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$VERSION 
+
+.deploy:                                               # it is a generic base job logic job
+  tags:
+    - local
+    - wsl
+    - shell
+  #before_script:
+    #- echo $SSH_KEY | sed -e "s/-----BEGIN RSA PRIVATE KEY-----/&\n/" -e "s/-----END RSA PRIVATE KEY-----/\n&/" -e "s/\S\{64\}/&\n/g"\ > deploy-key.pem
+    #- chmod 400 deploy-key.pem 
+  variables:
+    #SSH_KEY: ""
+    #SERVER_HOST: ""
+    DEPLOY_ENV: ""
+    APP_PORT: ""
+    ENDPOINT: ""
+  script:
+    #- scp -o StrictHostKeyChecking=no -i deploy-key.pem ./docker-compose.yaml ubuntu@$SERVER_HOST:/home/ubuntu #copy docker compose file
+    #- ssh -o StrictHostKeyChecking=no -i deploy-key.pem ubuntu@$$SERVER_HOST "
+    #    docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+    #    export COMPOSE_PROJECT_NAME=$DEPLOY_ENV &&
+    #    export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #    export DC_IMAGE_TAG=$VERSION &&
+    #    export DC_APP_PORT=$APP_PORT &&
+    #    docker-compose -f docker-compose.yaml down &&
+    #    docker-compose -f docker-compose.yaml up -d"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - pwd
+    - export COMPOSE_PROJECT_NAME=$DEPLOY_ENV
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$VERSION
+    - export DC_APP_PORT=$APP_PORT
+    - docker-compose down # stop all container and not fail if no container is running
+    - docker-compose up -d # run in detached mode
+  environment:
+    name: $DEPLOY_ENV
+    url: $ENDPOINT
+  
+deploy_to_dev:
+  extends: .deploy
+  stage: deploy_dev
+  variables:
+    #SSH_KEY: $SSH_PRIVATE_KEY
+    #SERVER_HOST: "DEV_SERVER_HOST"
+    DEPLOY_ENV: development
+    APP_PORT: 3000
+    ENDPOINT: $DEV_ENDPOINT
+  
+
+run_functional_tests:
+  stage: deploy_dev
+  needs:
+    - deploy_to_dev
+  script:
+    - echo "running functional tests"
+
+deploy_to_staging:
+  extends: .deploy
+  stage: deploy_staging
+  variables:
+    #SSH_KEY: $SSH_PRIVATE_KEY
+    #SERVER_HOST: "STAGING_SERVER_HOST"
+    DEPLOY_ENV: staging
+    APP_PORT: 4000
+    ENDPOINT: $STAGING_ENDPOINT
+
+run_performance_tests:
+  stage: deploy_staging
+  needs:
+    - deploy_to_staging
+  script:
+    - echo "running performance tests"
+
+deploy_to_prod:
+  extends: .deploy
+  stage: deploy_prod
+  variables:
+    #SSH_KEY: $SSH_PRIVATE_KEY
+    #SERVER_HOST: "PROD_SERVER_HOST"
+    DEPLOY_ENV: production
+    APP_PORT: 5000
+    ENDPOINT: $PROD_ENDPOINT
+  when: manual
+
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+
+```
+## 46. Microservices explained
+* Microservices became the standard for modern cloud application.
+* its important to know how to build CI/CD pipelines for microservices.
+* challeges of monolithic architecture, application is too large and complex, you can only scale the entire app, instead of the specific service.
+* release process takes longer in monolithic. which lead to development of microservices.
+* microservice application developed, deployed and scaled separately.
+* different components of microservices are products, shoping cart, payments, checkout, user account.
+* each service has its own api call. so each microservices can be written in different language.
+* each team can develop the service independently, without affecting others.
+* Added complexity just by the fact that a microservices application is a distributed system.
+* configure the communication between the services and more difficult to monitor with multiple instance of each service distributed across servers.
+* Tools are begin developed to tackle this challenges.
+  
+## 47. CI/CD - Monorepo vs Polyrepo
+*  **Monorepo**
+*  1 code base with folders, a directory for each micro-services.
+*  makes the code managment and development easier.
+*  clone and work with only 1 repo.
+*  Changes can be tracked together, tested together and released together.
+*  Share code and configurations.
+*  *challeges:*
+*  all projects and team are affected, if there is some issue.
+*  Big source code, means git interactions becomes slow.
+*  Additional logic is necessary to make sure only service is build and deployed which has changed.
+*  **Polyrepo**
+*  1 repository for each service
+*  code is completely isolated
+*  clone and work on them separately
+*  in gitlab we have groups to coonected project together
+*  helps to keep an overview
+*  creates shared secrets, CI/CD variables, Runners
+*  own pipeline for each repository.
+*  *challeges:*
+*  cross-cutting changes is more difficult.
+*  switching between projects tedious
+*  searching, testing and debugging is more difficult.
+*  sharing resource is more difficult.
+
+## 48. Microservices Demo Overview
+* let us consider a application with 3 services(frontend, shopping-cart, products)
+* all 3 services are written in node.js, and we have a mono repo for this.
+* we will build and deploy each service to an EC2 server using Docker compose.
+* we will aslo build a poly repo also.
+
+## 49. Mono repo project overview
+* click here to fork the [project](https://gitlab.com/jaisonvj/mymicroservice-cicd)
+* test the project locally.
+  
+## 50. Monorepo Demo - 1 Prepare Deployment Server
+* Register the runner for this project.
+* or use old runner by **old projct > setting > ci-cd > runners >click on edit button on runner > uncheck Lock to current projects > save changes**
+* now go to **new project > setting > ci-cd > runners >click on enable for this project on runner**.
+* create a deployment server in aws, download key-pair for ssh and open port in security groups.
+* install docker and docker compose.
+
+## 51. Monorepo Demo - 2 Build Services
+* create .gitlab-ci.yml in home directory.
+* We focus on part that are specific to working with microservices
+* Skipping test phase
+* we build and deploy
+* lets have build job for all 3 services
+* how to Build only the service that code is changed. we can configured it by adding condition,i.e keyword **only**
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"      
+      when: never
+    - when: always
+    
+stages:
+  - build
+  - deploy
+
+build_frontend:
+  stage: build
+  tags:
+    - wsl
+    - local
+    - shell
+  before_script:
+    - cd frontend
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/frontend
+    - export IMAGE_TAG=1.3
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+  only:                                            #only run this job if any changes in frontend
+    changes:
+      - "frontend/**/*"
+
+build_products:
+  stage: build
+  tags:
+    - wsl
+    - local
+    - shell
+  before_script:
+    - cd products
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/products
+    - export IMAGE_TAG=1.3
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+  only:                                       #only run this job if any changes in products
+    changes:
+      - "products/**/*"
+
+build_shopping_cart:
+  stage: build
+  tags:
+    - wsl
+    - local
+    - shell
+  before_script:
+    - cd shopping-cart
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/shopping-cart
+    - export IMAGE_TAG=1.3
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+  only:
+    changes:
+      - "shopping-cart/**/*"                #only run this job if any changes in shopping-cart
+```
+* Reuse shared build code
+* in **only** we cannot reuse env variable
+```yml
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"      
+      when: never
+    - when: always
+    
+stages:
+  - build
+  - deploy
+
+.build:
+  stage: build
+  tags:
+    - wsl
+    - local
+    - shell
+  variables:
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+  before_script:
+    - cd $MICRO_SERVICE
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
 
 
+build_frontend:
+  extends: .build
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+  only:
+    changes:
+      - "frontend/**/*"
+
+build_products:
+  extends: .build
+  variables:
+    MICRO_SERVICE: products
+    SERVICE_VERSION: "1.8"
+  only:
+    changes:
+      - "products/**/*"
+
+build_shopping_cart:
+  extends: .build
+  variables:
+    MICRO_SERVICE: shopping-cart
+    SERVICE_VERSION: "2.1"
+  only:
+    changes:
+      - "shopping-cart/**/*"
+```
+## 52. Monorepo Demo - 3 Deploy Services
+* create a generic docker compose file
+* $SSH_PRIVATE_KEY is set to global variable
+* **docker-compose.yaml**
+```yml
+version: "3.3"
+services:
+  app:
+    image: ${DC_IMAGE_NAME}:${DC_IMAGE_TAG}
+    ports:
+      - ${DC_APP_PORT}:${DC_APP_PORT}
+    networks:
+      - micro_service
+networks:
+  micro_service:
+    external:
+      name: micro_service
+```
+  
