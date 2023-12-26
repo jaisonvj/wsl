@@ -2659,4 +2659,16 @@ deploy_shopping_cart:
 * Now create a project for shopping-cart
 * **inside group > Create new project > Create blank project > Project name: shopping-cart > public > create project**
 * Now copy Dockerfile, imdex.html, package.json, server.js from folder of mymicroservice-cicd project into the new project created in a mymicroservice-cicd group.
+* In group we need not needed to configure a runner for individual project.Configure runner for whole group, instead of each project.
+* Including container registry, ci/cd etc.
+* Register a runner **group > build > Runners > new group runner ( 3 dots) > Copy Registration token or Click on show runner installation instruction > copy the command to register runner in linux section** .
+* After pasting command give all the instructions as below,
+![image11](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-26%20184544.png)
+* we will reuse same deployment server as well, stop all docker containers and images
+* make sure that docker and docker compose already installed.
+```
+docker ps && docker stop $(docker ps -q) && docker rm $(docker ps -q) && docker rmi -f $(docker images) && docker network rm -f micro_service
+```
+* Add a private key of deployment server to variable by, **setting > ci/cd > variable > type : file > add**.
+* create a docker-compose.yaml and .gitlab-ci.yaml for each project (copy the same content here).
   
