@@ -2950,5 +2950,5 @@ deploy_shopping_cart:
     SERVICE_VERSION: "2.1"
     APP_PORT: 3002
 ```
-* now check env of each project to validate the deployment. 
+* now check **operate > environment > deployment** of each project to validate the deployment. 
   
