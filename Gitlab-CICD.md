@@ -2671,4 +2671,284 @@ docker ps && docker stop $(docker ps -q) && docker rm $(docker ps -q) && docker 
 ```
 * Add a private key of deployment server to variable by, **setting > ci/cd > variable > type : file > add**.
 * create a docker-compose.yaml and .gitlab-ci.yaml for each project (copy the same content here).
+* docker-compose.yaml remains same since it is common one do some changes in .gitlab-ci.yaml in each project.
+* **docker-compose.yaml**
+```yaml
+version: "3.3"
+services:
+  app:
+    image: ${DC_IMAGE_NAME}:${DC_IMAGE_TAG}
+    ports:
+      - ${DC_APP_PORT}:${DC_APP_PORT}
+    networks:
+      - micro_service
+
+networks:
+  micro_service:
+    external:
+      name: micro_service
+```
+* **.gitlab-ci.yaml** for frontend.
+```yaml
+variables:
+  DEPLOYMENT_SERVER_HOST: "localhost"
+  APP_ENDPOINT: http://localhost:3000
+
+stages:
+  - build
+  - deploy
+
+.build:
+  stage: build
+  tags:
+    - wsl
+    - local
+    - shell
+    - group
+  variables:
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+  before_script:
+    - cd $MICRO_SERVICE
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+
+
+build_frontend:
+  extends: .build
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+
+  
+.deploy:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  variables: 
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+    APP_PORT: ""
+  before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@$DEPLOYMENT_SERVER_HOST:/home/ubuntu
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@$DEPLOYMENT_SERVER_HOST "
+    #  docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+
+    #  export COMPOSE_PROJECT_NAME=$MICRO_SERVICE && 
+    #  export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #  export DC_IMAGE_TAG=$IMAGE_TAG &&
+    #  export DC_APP_PORT=$APP_PORT &&
+
+    #  docker network create micro_service || true &&
+
+    #  docker-compose down &&
+    #  docker-compose up -d"
+     
+
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - export COMPOSE_PROJECT_NAME=$MICRO_SERVICE 
+    # above we learned earlier for container name.other wise all container will have same name
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$IMAGE_TAG 
+    - export DC_APP_PORT=$APP_PORT
+    - docker network create micro_service || true
+    # if above command files return true to ignore the issues during 2nd time creating network again
+    - docker-compose down 
+    - docker-compose up -d
+
+  environment:
+    name: development
+    url: $APP_ENDPOINT
+
+
+deploy_frontend:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+    APP_PORT: 3000
+
+```
+* **.gitlab-ci.yaml** for products.
+```yaml
+variables:
+  DEPLOYMENT_SERVER_HOST: "localhost"
+  APP_ENDPOINT: http://localhost:3000
+
+stages:
+  - build
+  - deploy
+
+.build:
+  stage: build
+  tags:
+    - wsl
+    - local
+    - shell
+  variables:
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+  before_script:
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+
+build_products:
+  extends: .build
+  variables:
+    MICRO_SERVICE: products
+    SERVICE_VERSION: "1.8"
+  
+.deploy:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  variables: 
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+    APP_PORT: ""
+  before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@$DEPLOYMENT_SERVER_HOST:/home/ubuntu
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@$DEPLOYMENT_SERVER_HOST "
+    #  docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+
+    #  export COMPOSE_PROJECT_NAME=$MICRO_SERVICE && 
+    #  export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #  export DC_IMAGE_TAG=$IMAGE_TAG &&
+    #  export DC_APP_PORT=$APP_PORT &&
+
+    #  docker network create micro_service || true &&
+
+    #  docker-compose down &&
+    #  docker-compose up -d"
+     
+
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - export COMPOSE_PROJECT_NAME=$MICRO_SERVICE 
+    # above we learned earlier for container name.other wise all container will have same name
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$IMAGE_TAG 
+    - export DC_APP_PORT=$APP_PORT
+    - docker network create micro_service || true
+    # if above command files return true to ignore the issues during 2nd time creating network again
+    - docker-compose down 
+    - docker-compose up -d
+
+  environment:
+    name: development
+    url: $APP_ENDPOINT
+
+deploy_products:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: products
+    SERVICE_VERSION: "1.8"
+    APP_PORT: 3001
+```
+* **.gitlab-ci.yaml** for shopping-cart.
+```yaml
+variables:
+  DEPLOYMENT_SERVER_HOST: "localhost"
+  APP_ENDPOINT: http://localhost:3000
+
+stages:
+  - build
+  - deploy
+
+.build:
+  stage: build
+  tags:
+    - wsl
+    - local
+    - shell
+  variables:
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+  before_script:
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+
+build_shopping_cart:
+  extends: .build
+  variables:
+    MICRO_SERVICE: shopping-cart
+    SERVICE_VERSION: "2.1"
+
+  
+.deploy:
+  stage: deploy
+  tags:
+    - local
+    - wsl
+    - shell
+  variables: 
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+    APP_PORT: ""
+  before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@$DEPLOYMENT_SERVER_HOST:/home/ubuntu
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@$DEPLOYMENT_SERVER_HOST "
+    #  docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+
+    #  export COMPOSE_PROJECT_NAME=$MICRO_SERVICE && 
+    #  export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #  export DC_IMAGE_TAG=$IMAGE_TAG &&
+    #  export DC_APP_PORT=$APP_PORT &&
+
+    #  docker network create micro_service || true &&
+
+    #  docker-compose down &&
+    #  docker-compose up -d"
+     
+
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - export COMPOSE_PROJECT_NAME=$MICRO_SERVICE 
+    # above we learned earlier for container name.other wise all container will have same name
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$IMAGE_TAG 
+    - export DC_APP_PORT=$APP_PORT
+    - docker network create micro_service || true
+    # if above command files return true to ignore the issues during 2nd time creating network again
+    - docker-compose down 
+    - docker-compose up -d
+
+  environment:
+    name: development
+    url: $APP_ENDPOINT
+
+deploy_shopping_cart:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: shopping-cart
+    SERVICE_VERSION: "2.1"
+    APP_PORT: 3002
+```
+* now check env of each project to validate the deployment. 
   
