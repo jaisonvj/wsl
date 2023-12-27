@@ -3273,21 +3273,36 @@ kubectl get namespaces
   kubectl create rolebinding cicd-rb --role=cicd-role --serviceaccount=my-micro-service:cicd-sa --namespace=my-micro-service
   ```
   ![image12](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184120.png)
-* create a kubeconfig file by copyng admn kubeconfig file and replace the values
+  
+  **create a kubeconfig file for service account or user by copying or cloning admin kubeconfig file and replace the values**
+  
+   ![image14](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184003.png)
+  
+  **Now get the token of service account created by locating the secret of that user created**
+  
   ![image13](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184454.png)
-  ![image14](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184003.png)
   ![image15](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184708.png)
+  
   **copy the token of service account**
-  ![image16](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184708.png)
+  ![image16](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184921.png)
+  
   **Decode the token**
-  ![image17](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184708.png)
+  
+  ![image17](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20185257.png)
+  
   **Copy decoded one**
+  
   ![image18](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20185520.png)
+  
   **Copy decoded token to cloned kubeconfig i.e cicd-kubeconfig.yml**
+  
   ![image19](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20185821.png)
   ![image20](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20190032.png)
+  ![image22](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20192908.png)
+  
   **Test it by overwriting KUBECONFIG**
-  ![image21](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20190032.png)
+  
+  ![image21](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20190609.png)
   
   
   
