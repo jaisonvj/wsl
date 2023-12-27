@@ -3194,6 +3194,100 @@ deploy_shopping_cart:
     APP_PORT: 3002
 
 ```
-## 56. Job Templates - 2 Project Template
+## 56. Introduction and overview to kubernetes
+* Limitations with docker compose are scale services up / down dynamically, having 100s of microservices, monitoring, manual re-deploying.
+* we need a system to manage all these containerized workloads.
+* There are tools to solve these challenges.
+* container orchestration tools. Flexibly scale up and scale down, Automated rollouts and rollbacks, self-healing, secret and configuration managment.
+* How to deploy your microservice application to a k8s cluster.
+* Deploy microservice application through GitLab CI/CD pipeline to a k8s cluster.
+* **Create a K8ns cluster > create a dedicated gitlab user(security best practice) > create k8s manifests (Deployment and Services) for microservices > adjust gitlab pipeline configuration**
 
+## 57. Create kubernetes Cluster
+* Create a managed k8s platform on Linode LKE.
+* Really easy and fast to have k8s cluster up and running.
+* But also have a real-life environment instead of eg: running it locally(miikube).
+* we can also create a cluster in AWS EKS, Google GKE, Azure AKS and Linode LKE.
+* **Create a k8s cluster**
+* **go to linode.com > singup > click on create > cluster Label:my-micro-service > Region:closest one > kubernetes Version: lattest one > add node to pools > select that we want > click on create a cluster**
+* we can see kubernetes API endpont https url and kubeconfig yaml.
+* **Now connect to the k8s cluster**
+* by default admin user is created when we create k8s cluster.
+* **kubeconfig** contains all the authenication information needed to connect to a cluster by admin user such as k8s API endpoint, username/Password, secure token.
+* Download the kubeconfig file.
+* In k8s, We have service account which represents non-human user.
+* service account has permission to define what the service account is allowed to do inside the cluster.
+* Install kubectl in your pc first.
+* give the limited permission to kubeconfig
+```
+sudo chmod 400 ~/Downloads/my-micro-service-kubeconfig.yaml
+```
+* access it by,
+```
+sudo export KUBECONFIG=~/Downloads/my-micro-service-kubeconfig.yaml
+```
+```
+kubectl cluster-info
+```
+```
+kubectl get namespaces
+```
+
+## 58. Create GitLab User in kubernetes
+*  Create a dedicated user (Service Account) for GitLab
+*  Create restricted permissions (Roles)
+*  Generate kubeconfig file for service Account
+*  Deploy our services in a dedicated namespace
+*  Restrict GitLab access to that namespace
+* Create a namespace,
+  ```
+  kubectl create namespace my-micro-service
+  ```
+* Create dedicated User and Permissions
+  ```
+  kubectl create serviceaccount cicd-sa --namespace=my-micro-service
+  ```
+* define a set of permissions using Roles
+  ```
+  sudo nano cicd-role.yml
+  ```
+  ```yml
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role
+  metadata:
+    namespace: my-micro-service
+    name: cicd-role
+  rules:
+  - apiGroups: [""] # indicates the core APIgroup
+    resources: ["pods", "services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["extensions", "apps"] # indicates the core APIgroup
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  ```
+  ```
+  kubectl apply -f cicd-role.yml
+  ```
+* now we needed to link service account to the role by rolebinding we created.
+  ```
+  kubectl create rolebinding cicd-rb --role=cicd-role --serviceaccount=my-micro-service:cicd-sa --namespace=my-micro-service
+  ```
+  [!image12](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184120.png)
+* create a kubeconfig file by copyng admn kubeconfig file and replace the values
+  [!image13](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184454.png)
+  [!image14](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184003.png)
+  [!image15](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184708.png)
+  **copy the token of service account**
+  [!image16](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184708.png)
+  **Decode the token**
+  [!image17](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20184708.png)
+  **Copy decoded one**
+  [!image18](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20185520.png)
+  **Copy decoded token to cloned kubeconfig i.e cicd-kubeconfig.yml**
+  [!image19](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20185821.png)
+  [!image20](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20190032.png)
+  **Test it by overwriting KUBECONFIG**
+  [!image21](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20190032.png)
+  
+  
   
