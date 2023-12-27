@@ -3062,9 +3062,138 @@ deploy_frontend:
 * move that build and deploy yaml to this project here. i.e .build-template.yml, .deploy-template.yml
 * now this can be used by any git-lab project.
 * to refercence this use keyword **-project: username/name of the project**
-* if included in group **-project: include group name/project name** also.
+* if included in group **-project: include group name123/project name** also.
 * tell the git-lab which file , we should use by attribute called **file:**
-* we also use attribute called **ref:** to tell which branch it is, commit hash or a tag. 
+* we also use attribute called **ref:** to tell which branch it is, commit hash or a tag.
+* we can also use **- remote:** ,include from a different location(full url necessary)
+* eg: - remote: 'https://gitlab.com/mymicroservice-cicd7560751/frontend/.build-template.yml'
+* we use **- template** keyword for git lab official templates. 
+* please include group number after group name. which can be found in **setting > general setting > copy from group url**.
+* frontend **.gitlab-ci.yaml**
+```yml
+include:
+  - project: mymicroservice-cicd7560751/ci-templates
+    ref: main
+    file:
+      - .build-template.yml
+      - .deploy-template.yml
+  #- remote: 'https://gitlab.com/mymicroservice-cicd7560751/frontend/.build-template.yml'
+  #- remote: 'https://gitlab.com/mymicroservice-cicd7560751/frontend/.deploy-template.yml'
+  #- template: Auto-DevOps.gitlab-ci.yml
+  #- local: .install.yml
 
+variables:
+  DEPLOYMENT_SERVER_HOST: "localhost"
+  APP_ENDPOINT: http://localhost:3000
+stages:
+  - build
+  - deploy
+.build: # additional paramater can be included like this
+    tags:
+    - wsl
+    - local
+    - shell
+    - group
+build_frontend:
+  extends: .build
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+.deploy:
+  tags:
+    - local
+    - wsl
+    - shell
+    - group
+deploy_frontend:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+    APP_PORT: 3000
+```
+* products **.gitlab-ci.yaml**
+```yml
+include:
+  - project: mymicroservice-cicd7560751/ci-templates
+    ref: main
+    file:
+      - .build-template.yml
+      - .deploy-template.yml
+variables:
+  DEPLOYMENT_SERVER_HOST: "localhost"
+  APP_ENDPOINT: http://localhost:3000
+stages:
+  - build
+  - deploy
+.build:
+  tags:
+    - wsl
+    - local
+    - shell
+    - group
+  
+build_products:
+  extends: .build
+  variables:
+    MICRO_SERVICE: products
+    SERVICE_VERSION: "1.8"
+  
+.deploy:
+  tags:
+    - local
+    - wsl
+    - shell
+    - group
+ 
+deploy_products:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: products
+    SERVICE_VERSION: "1.8"
+    APP_PORT: 3001
+```
+* shopping-cart **.gitlab-ci.yaml**
+```yml
+include:
+  - project: mymicroservice-cicd7560751/ci-templates
+    ref: main
+    file:
+      - .build-template.yml
+      - .deploy-template.yml
+variables:
+  DEPLOYMENT_SERVER_HOST: "localhost"
+  APP_ENDPOINT: http://localhost:3000
+stages:
+  - build
+  - deploy
+.build:
+  tags:
+    - wsl
+    - local
+    - shell
+    - group
+  
+build_shopping_cart:
+  extends: .build
+  variables:
+    MICRO_SERVICE: shopping-cart
+    SERVICE_VERSION: "2.1"
+  
+.deploy:
+  tags:
+    - local
+    - wsl
+    - shell
+    - group
+deploy_shopping_cart:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: shopping-cart
+    SERVICE_VERSION: "2.1"
+    APP_PORT: 3002
+
+```
+## 56. Job Templates - 2 Project Template
 
   
