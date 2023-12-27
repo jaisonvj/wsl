@@ -2950,5 +2950,121 @@ deploy_shopping_cart:
     SERVICE_VERSION: "2.1"
     APP_PORT: 3002
 ```
-* now check **operate > environment > deployment** of each project to validate the deployment. 
+* now check **operate > environment > deployment** of each project to validate the deployment.
+
+## 54. Job Templates - 1 Extract common logic
+
+* We are Repeating the same pipeline configuration. this is diadvantage of poly repo.
+* Instead we can have a common configuration that all microservices can use.
+* You can extract common configuration, make it generic, so no hardcoded values specific to that project.
+* Another project can include it in its own CI/CD configuration.
+* just reference in the pipeline configuration to easily integrate it. eg:build.yaml
+* we can write own templates or use templates from other teams.
+* teams can work together to build shared template libraries.
+* Reuse this confiuration with less effort.
+* Possible subkeys for include are: template, local, file, remote
+* if we write any parameter like before_script in .gitlab-ci.yml. it will overwrite before_script parameter of .build-template.yml.
+* To use this extract the commonly used configuration. create a file **.build-template.yml** in local home of project.
+```
+.build:
+  stage: build
+  variables:
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+  before_script:
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+```
+* extract the commonly used configuration. create a file **.deploy-template.yml** in local home of project
+```yml 
+.deploy:
+  stage: deploy
+  variables: 
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+    APP_PORT: ""
+  before_script:
+    #- chmod 400 $SSH_PRIVATE_KEY
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+  script:
+    #- scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@$DEPLOYMENT_SERVER_HOST:/home/ubuntu
+    #- ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@$DEPLOYMENT_SERVER_HOST "
+    #  docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+
+    #  export COMPOSE_PROJECT_NAME=$MICRO_SERVICE && 
+    #  export DC_IMAGE_NAME=$IMAGE_NAME &&
+    #  export DC_IMAGE_TAG=$IMAGE_TAG &&
+    #  export DC_APP_PORT=$APP_PORT &&
+
+    #  docker network create micro_service || true &&
+
+    #  docker-compose down &&
+    #  docker-compose up -d"
+     
+
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - export COMPOSE_PROJECT_NAME=$MICRO_SERVICE 
+    # above we learned earlier for container name.other wise all container will have same name
+    - export DC_IMAGE_NAME=$IMAGE_NAME
+    - export DC_IMAGE_TAG=$IMAGE_TAG 
+    - export DC_APP_PORT=$APP_PORT
+    - docker network create micro_service || true
+    # if above command files return true to ignore the issues during 2nd time creating network again
+    - docker-compose down 
+    - docker-compose up -d
+  environment:
+    name: development
+    url: $APP_ENDPOINT
+```
+* **.gitlab-ci.yaml**
+```yml
+include: 
+  - local: '.build-template.yml'
+  - local: '.deploy-template.yml'
+variables:
+  DEPLOYMENT_SERVER_HOST: "localhost"
+  APP_ENDPOINT: http://localhost:3000
+stages:
+  - build
+  - deploy
+.build: # additional paramater can be included like this
+    tags:
+    - wsl
+    - local
+    - shell
+    - group
+build_frontend:
+  extends: .build
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+.deploy:
+  tags:
+    - local
+    - wsl
+    - shell
+    - group
+deploy_frontend:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+    APP_PORT: 3000
+```
+## 55. Job Templates - 2 Project Template
+
+* its difficult to copy same template to other services as well. so to solve this issue lets create a new project in outside or inside the group named **group > new project > blank project > name:ci-templates > make public > create project**
+* move that build and deploy yaml to this project here. i.e .build-template.yml, .deploy-template.yml
+* now this can be used by any git-lab project.
+* to refercence this use keyword **-project: username/name of the project**
+* if included in group **-project: include group name/project name** also.
+* tell the git-lab which file , we should use by attribute called **file:**
+* we also use attribute called **ref:** to tell which branch it is, commit hash or a tag. 
+
+
   
