@@ -3304,5 +3304,7 @@ kubectl get namespaces
   
   ![image21](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20190609.png)
   
-  
+  * now add in GitLab group as variable
+
+  ![image23](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20193308.png)
   
