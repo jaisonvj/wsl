@@ -3259,7 +3259,7 @@ kubectl get namespaces
     name: cicd-role
   rules:
   - apiGroups: [""] # indicates the core APIgroup
-    resources: ["pods", "services"]
+    resources: ["pods", "services", "secrets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["extensions", "apps"] # indicates the core APIgroup
     resources: ["deployments"]
@@ -3307,4 +3307,178 @@ kubectl get namespaces
   * now add in GitLab group as variable
 
   ![image23](https://github.com/jaisonvj/wsl/blob/main/Screenshots/Screenshot%202023-12-27%20193308.png)
+
+## 59. Deploy to k8s - Part 1
+* we neede k8s manifest file for deployment and service of each microservice.
+* Create a docker Registry secret for k8s to be able to pull the docker images.
+* install kubectl on gitlab runner
+* update the deploy job to use kubectl instead of docker-compose.
+* **Create a deployment and services for frontend**
+* create a new director called **kubernetes** in home directory of gitlab project(frontend).
+* Inside kubernetes folder create a file called **deployment.yaml**
   
+```yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $MICRO_SERVICE
+  namespace: my-micro-service
+spec:
+  replicas: $REPLICAS
+  selector:
+    matchLabels:
+      app: $MICRO_SERVICE
+  template:
+    metadata:
+      labels:
+        app: $MICRO_SERVICE
+    spec:
+      imagePullSecrets:
+        - name: my-registry-key
+      containers:
+        - name: $MICRO_SERVICE
+          image: $IMAGE_NAME:$IMAGE_TAG
+          ports:
+            - containerPort: $APP_PORT
+```
+
+* Inside kubernetes folder create a file called **service.yaml**
+  
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: $MICRO_SERVICE
+  namespace: my-micro-service
+spec:
+  selector:
+    app: $MICRO_SERVICE
+  ports:
+  - protocol: TCP
+    port: $APP_PORT
+    targetPort: $APP_PORT 
+```
+
+* Since service name would be microservice name, so change it in docker file
+
+```
+FROM node:17-alpine
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+RUN npm install
+COPY index.html .
+COPY server.js .
+
+#ENV PRODUCTS_SERVICE="products_app_1" #change to below
+ENV PRODUCTS_SERVICE="products"
+#ENV SHOPPING_CART_SERVICE="shopping-cart_app_1"# change to below
+ENV SHOPPING_CART_SERVICE="shopping-cart"
+
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+* now lets create a file called **mymicroservice-cicd7560751/ci-templates/deploy-k8s.yml**
+* here only by command we will create a secret that was on deployment
+* note: we needed to use seperate tool for substitue parameterised value inside yaml for matching environment variable values i.e **envsubst** = a linux program 
+
+```yml
+.deploy:
+  stage: deploy
+  variables: 
+    MICRO_SERVICE: ""
+    SERVICE_VERSION: ""
+    APP_PORT: ""
+    REPLICAS: ""
+  before_script:
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/microservice/$MICRO_SERVICE
+    - export IMAGE_TAG=$SERVICE_VERSION
+    - export MICRO_SERVICE=$MICRO_SERVICE
+    - export APP_PORT=$APP_PORT
+    - export REPLICAS=$REPLICAS
+    - export KUBECONFIG=$KUBE_CONFIG
+  script:
+    - kubectl create secret docker-registry my-registry-key --docker-server=$CI_REGISTRY --docker-username=$GITLAB_USER --docker-password=$GITLAB_PASWORD -n my-micro-service --dry-run=client -o yaml | kubectl apply -f -
+    - envsubst < kubernetes/deployment.yaml | kubectl apply -f -
+    - envsubst < kubernetes/service.yaml | kubectl apply -f -
+    # kubectl create secret <secret type> <secret name> used to authenticate registry by K8s
+    # CI_REGISTRY_USER and CI_REGISTRY_PASSWORD are only valid untill job is running. we want persistent one, so we use gitlab username and password.
+    # so create a variable of GITLAB_USER and GITLAB_PASSWORD of actual gitlab user
+    # kubectl commands are imperative, imperative = Tell what to do, it fails if exists  so we use --dry-run
+    # Apply YAML files, which are declarative, Declarative = Define desire state 
+    # --dry-run=client = preview the object that would be sent to your cluster, without really submitting it
+
+```
+
+* now lets do some changes in pipeline i.e **.gitlab-ci.yml**
+* $CI_REGISTRY_NAME --> predefined
+* $MICRO_SERVICE, $SERVICE_VERSION, $APP_PORT, $REPLICAS --> we need to define
+  
+```yml
+include:
+  - project: mymicroservice-cicd7560751/ci-templates
+    ref: main
+    file:
+      - .build-template.yml
+      - deploy-k8s.yml
+
+stages:
+  - build
+  - deploy
+
+.build: # additional paramater can be included like this
+    tags:
+    - wsl
+    - local
+    - shell
+    - group
+
+build_frontend:
+  extends: .build
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+
+.deploy:
+  tags:
+    - local
+    - wsl
+    - shell
+    - group
+
+deploy_frontend:
+  extends: .deploy
+  variables:
+    MICRO_SERVICE: frontend
+    SERVICE_VERSION: "1.3"
+    APP_PORT: 3000
+    REPLICAS: 2
+```
+
+## 60. Deploy to k8s - Part2
+* install **kubectl** that will run this job
+* ssh to gitlab runner(ssh -i ~/Downloads/gitlab-runner-key.pem ubuntu@13.4.115.178)
+* install using native package manager [click here](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management)
+* install **envsubst** if not already present. by default it will be present.[click here](https://command-not-found.com/envsubst)
+* now run the pipeline frontend is deployed successfully in k8s cluster.
+* check by,
+  ```
+  kubectl get service -n my-micro-service
+  ```
+  ```
+  kubectl get deployment -n my-micro-srvice
+  ```
+  ```
+  kubectl get pod -n my-micro-srvice
+  ```
+* to check the application accessible through the browser, since the service is internal service by default(cluster ip), lets use kubectl proxy.
+* For this no need to configure ingress, LoadBalancer or any other external service
+  ```
+  kubectl port-forward service/frontend -n my-micro-service 3000:3000
+  ```
+* similarly do for products and shopping-kart project by
+   * creating folder kubernetes and adding deployment.yaml and service.yaml file.
+   * changing common deployment file to deploy-k8s.yaml in .gitlab.yaml
+   * adding additional variable i.e Replica
+   * commit it run pipeline and deployment will be success
