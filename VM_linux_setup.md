@@ -138,7 +138,7 @@
    ```
 2. Remote to host
    ```
-   scp -i  C:/Users/LAPTOP-JAISON/amazonVM.pem -P 22 ec2-user@192.168.1.41:/home/ec2-user/.ssh/id_rsa.pub C:/Users/LAPTOP-JAISON
+   scp -i  C:/Users/LAPTOP-JAISON/amazonVM.pem -P 22 ec2-user@192.168.1.41:/home/ec2-user/splunk-new.zip C:/Users/LAPTOP-JAISON/Downloads
    ```
 3. port tunneling to local host
    ```
