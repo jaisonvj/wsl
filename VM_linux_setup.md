@@ -24,7 +24,7 @@
    ```
    sudo nano /etc/sysconfig/network-scripts/ifcfg-eth0
    ```
-   * paste below in file
+   * paste below in file and save
    ```
    DEVICE=eth0
    BOOTPROTO=static
@@ -100,4 +100,9 @@
    systemctl restart sshd
    
    ```
-   5. 
+   * give the execution permission to file
+   ```
+   chmod +x pwdless_ssh.sh
+   ```
+   
+5. 
