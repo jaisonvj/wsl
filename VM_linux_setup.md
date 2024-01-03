@@ -134,7 +134,7 @@
 
 1. From host to remote
    ```
-   scp -i C:\Users\LAPTOP-JAISON\anazonVM.pem -r -P 22 ZenOptics-LMY-1.1 ec2-user@192.168.1.41:~
+   scp -i C:\Users\LAPTOP-JAISON\anazonVM.pem -r -P 22 E:\MResultFinal\ZenOptics-LMY-1.1 ec2-user@192.168.1.41:~
    ```
 2. Remote to host
    ```
