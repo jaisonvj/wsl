@@ -118,8 +118,8 @@
    ```sh
    ssh -i amazonVM.pem ec2-user@192.168.1.41
    ```
-8. To ssh from putty convert **.pem** file to **.ppk**
-   **open PUTTYgen > click on load > navigate to .pem *(select AllFiles(*.*))* > click on save private key > give the file name > save**
+8. To ssh from putty convert **.pem** file to **.ppk** file 
+   * **open PUTTYgen > click on load > navigate to .pem *(select AllFiles(*.*))* > click on save private key > give the file name > save**
 9. now ssh using putty.
     * session
       * Host Name (or IP address) : ec2-user@192.168.1.41
