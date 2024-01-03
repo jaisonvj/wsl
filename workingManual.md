@@ -12,7 +12,7 @@
    ```
  * zip folder
    ```sh
-   zip -r archive_name.zip directory_name
+   sudo zip -r archive_name.zip directory_name
    ```
  * unzip folder
    ```
