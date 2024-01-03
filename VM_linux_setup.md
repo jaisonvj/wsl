@@ -121,4 +121,12 @@
 8. To ssh from putty convert **.pem** file to **.ppk**
    **open PUTTYgen > click on load > navigate to .pem *(select AllFiles(*.*))* > click on save private key > give the file name > save**
 9. now ssh using putty.
+    * session
+      * Host Name (or IP address) : ec2-user@192.168.1.41
+      * Saved Sessions: ec2-user@192.168.1.41
+    * Connection > SSH > Auth > Credentials > Private-key file for authentication: Browse the ppk file path.
+    * Connection > SSH > Tunnels > source port: 8000(local machine port) > Destination: 192.168.1.41:8000(remote machine) > add
+    * windows > appearance > click on change > Font: Consolas, Fontstyle: Regular, size: 16 > ok
+    * session --> save
+    * session select the saves session and open.
    
