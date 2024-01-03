@@ -129,4 +129,24 @@
     * windows > appearance > click on change > Font: Consolas, Fontstyle: Regular, size: 16 > ok
     * session --> save
     * session select the saves session and open.
+
+# Steps for file transfer
+
+1. From host to remote
+   ```
+   scp -r -P 22 ZenOptics-LMY-1.1 ec2-user@192.168.1.41:~
+   ```
+2. Remote to host
+   ```
+   scp -P 22 ec2-user@192.168.1.41:/home/ec2-user/.ssh/id_rsa.pub C:/Users/LAPTOP-JAISO
+   ```
+3. port tunneling to local host
+   ```
+   ssh -N -v -L 7091:127.0.0.1:7091 -L 7091:127.0.0.1:7091 ec2-user@192.168.1.41 -p 22
+   ```
+4. change the time zone
+   ```
+   sudo timedatectl set-timezone Asia/Kolkata
+   ```
+
    
