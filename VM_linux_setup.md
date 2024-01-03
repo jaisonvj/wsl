@@ -14,11 +14,11 @@
    ```
 2. connect to it by ssh from *powershell*
    ```
-   ssh -o StrictHostKeyChecking=no ec2-user@<ip addr>
+   ssh -o StrictHostKeyChecking=no ec2-user@192.168.1.41
    ```
    * in case warning occures @WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!@
    ```
-   ssh-keygen -R <ip address>
+   ssh-keygen -R 192.168.1.41
    ```
 3. set the the static ip
    ```
@@ -104,5 +104,21 @@
    ```
    chmod +x pwdless_ssh.sh
    ```
+   * execute the file
+   ```
+   ./pwdless_ssh.sh
+   ```
    
-5. 
+5. copy the private key i.e **.pem** file which is same we have setted for root and other user in the system
+   ```sh
+   cat .ssh/id.pem
+   ```
+6. create a file called **amazonVM.pem** and copy above content to it.
+7. Try to ssh by from powershell.
+   ```sh
+   ssh -i amazonVM.pem ec2-user@192.168.1.41
+   ```
+8. To ssh from putty convert **.pem** file to **.ppk**
+   **open PUTTYgen > click on load > navigate to .pem *(select AllFiles(*.*))* > click on save private key > give the file name > save**
+9. now ssh using putty.
+   
