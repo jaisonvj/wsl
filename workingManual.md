@@ -1,10 +1,26 @@
 
 # common command used in shell script
 
-1. extract the tar file
- ```sh
-tar -xf /tmp/apache-tomcat.tar.gz -C "$INSTALL_DIR" --strip-components=1 
-```
+1. extract and compress
+ * Extract to tar
+   ```sh
+   tar -xf /tmp/apache-tomcat.tar.gz -C "$INSTALL_DIR" --strip-components=1 
+   ```
+ * Compress to tar
+   ```
+   tar -czvf archive_name.tar.gz directory_name
+   ```
+ * zip folder
+   ```sh
+   zip -r archive_name.zip directory_name
+   ```
+ * unzip folder
+   ```
+   unzip file_name.zip -d /path/to/directory
+   ```
+   ```
+   unzip -P PasswOrd file_name.zip
+   ```
 2. add newuser and group
 ```sh
 useradd -m -g users zenoptics
