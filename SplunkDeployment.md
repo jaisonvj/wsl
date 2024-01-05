@@ -151,6 +151,21 @@ sudo systemctl restart tomcat
 2. 
 
 
+## installing the splunk
+
+1. Download the rpm package from splunk enterprise download
+```
+wget -O splunk-9.1.2-b6b9c8185839.x86_64.rpm "https://download.splunk.com/products/splunk/releases/9.1.2/linux/splunk-9.1.2-b6b9c8185839.x86_64.rpm"
+```
+2. Unpack the downloaded package
+```
+sudo rpm -i splunk-9.1.2-b6b9c8185839.x86_64.rpm
+```
+3. install
+```
+ sudo /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd Root@123
+```
+
 ## Uninstalling the splunk
 
 1. Stop Splunk Enterprise. You can do this by running the following command in your terminal:
@@ -163,7 +178,7 @@ sudo /opt/splunk/bin/splunk disable boot-start
 ```
 3. Remove the Splunk package. You can do this by running the following command in your terminal:
 ```
-sudo apt remove splunk
+sudo yum remove splunk -y
 ```
 4. Find and kill any lingering processes that contain “splunk” in their name1.
 ```
