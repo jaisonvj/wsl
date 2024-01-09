@@ -6,9 +6,15 @@
    ```sh
    tar -xf /tmp/apache-tomcat.tar.gz -C "$INSTALL_DIR" --strip-components=1 
    ```
+   ```
+   tar -xvzf splunk-etc-amazone-onprem-2024-01-09--16-45-05.tgz -C /path/to/directory
+   ```
  * Compress to tar
    ```
    tar -czvf archive_name.tar.gz directory_name
+   ```
+   ```
+   tar -cvzf name_of_your_archive.tgz name_of_your_directory
    ```
  * zip folder
    ```sh
